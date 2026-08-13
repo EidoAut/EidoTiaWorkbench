@@ -4,6 +4,8 @@ Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
 WinForms utility for **TIA Portal Openness V21** that scans, exports, imports, and validates PLC artifacts and classic WinCC HMI artifacts in a structured engineering workspace.
 
+![Eido TIA Workbench export view](docs/images/eido-tia-workbench-export.jpg)
+
 ## Requirements
 
 - TIA Portal V21 installed.
