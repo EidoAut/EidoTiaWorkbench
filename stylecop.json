@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/master/StyleCop.Analyzers/StyleCop.Analyzers/Settings.StyleCop.schema.json",
+  "settings": {
+    "documentationRules": {
+      "companyName": "EIDO AUTOMATION, S.L.U.",
+      "copyrightText": "Copyright (c) 2026 EIDO AUTOMATION, S.L.U.",
+      "documentExposedElements": true,
+      "documentInternalElements": true,
+      "documentPrivateElements": true,
+      "xmlHeader": false
+    },
+    "orderingRules": {
+      "usingDirectivesPlacement": "outsideNamespace",
+      "systemUsingDirectivesFirst": true
+    }
+  }
+}

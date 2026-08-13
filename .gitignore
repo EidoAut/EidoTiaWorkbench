@@ -1,0 +1,33 @@
+# Visual Studio and build output
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Generated logs and reports
+*.log
+visual-*.log
+validation-screenshots/
+tia-git-exporter-operation-report*.txt
+*_VALIDATION_REPORT.md
+*_VALIDATION.md
+*_TEST_REPORT.md
+*_REPORT.md
+TECHNICAL_DIAGNOSIS.md
+
+# Archives and generated deliverables
+*.zip
+*.7z
+*.rar
+
+# TIA / Siemens generated binaries
+*.dll
+*.exe
+*.pdb
+
+# Temporary files
+*.tmp
+~$*
