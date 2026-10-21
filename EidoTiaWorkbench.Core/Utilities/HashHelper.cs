@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// HashHelper.cs
+// Cryptographic hashing utilities used for manifest/incremental exports.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Security.Cryptography;
 using System.Text;

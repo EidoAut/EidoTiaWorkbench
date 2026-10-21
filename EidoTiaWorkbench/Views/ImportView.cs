@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportView.cs
+// Displays workspace inventory and import controls for selected artifacts.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -34,13 +40,14 @@ namespace EidoTiaWorkbench.Views {
         public ImportView() {
             this.Dock = DockStyle.Fill;
             this.BackColor = ThemeColors.Background;
-            this.Padding = new Padding(18);
+            this.Padding = new Padding(ThemeMetrics.Xl);
 
             var root = new TableLayoutPanel {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
                 RowCount = 5,
             };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -94,6 +101,11 @@ namespace EidoTiaWorkbench.Views {
                 SplitterDistance = 580,
             };
 
+            body.SizeChanged += (s, e) => {
+                if (body.ClientSize.Width > 500) {
+                    body.SplitterDistance = Math.Max(240, (int)(body.ClientSize.Width * 0.58));
+                }
+            };
             this._tree = new ArtifactTreeControl();
             this._tree.ConfigureSelection(item => item != null && item.CanImport);
             this._tree.SelectionChanged += (s, e) => this.UpdateSummary();
@@ -102,11 +114,18 @@ namespace EidoTiaWorkbench.Views {
             var right = new TableLayoutPanel {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 3,
+                RowCount = 5,
                 BackColor = ThemeColors.Surface,
                 Padding = new Padding(12),
             };
+            right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            right.Dock = DockStyle.Top;
+            body.Panel2.AutoScroll = true;
+            body.Panel2.SizeChanged += (sender, e) => right.Height = Math.Max(body.Panel2.ClientSize.Height, ThemeMetrics.Scale(right, 320));
+            right.Height = 320;
+            right.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             right.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
+            right.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             right.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             right.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
@@ -140,9 +159,11 @@ namespace EidoTiaWorkbench.Views {
                 TextAlign = ContentAlignment.MiddleLeft,
             };
 
-            right.Controls.Add(this._comparison, 0, 0);
-            right.Controls.Add(this._conflicts, 0, 1);
-            right.Controls.Add(this._summary, 0, 2);
+            right.Controls.Add(new Label { Text = "Workspace comparison", AutoSize = true, Font = ThemeFonts.SectionTitle, Margin = new Padding(0, 0, 0, 12) }, 0, 0);
+            right.Controls.Add(this._comparison, 0, 1);
+            right.Controls.Add(new Label { Text = "Prevalidation & conflicts", AutoSize = true, Font = ThemeFonts.SectionTitle, Margin = new Padding(0, 12, 0, 8) }, 0, 2);
+            right.Controls.Add(this._conflicts, 0, 3);
+            right.Controls.Add(this._summary, 0, 4);
             body.Panel2.Controls.Add(right);
 
             var bottom = new FlowLayoutPanel {
@@ -155,13 +176,13 @@ namespace EidoTiaWorkbench.Views {
             };
             var import = new PrimaryButton { Text = "Import selected" };
             var dryRun = new SecondaryButton { Text = "Dry run" };
-            this._dryRun = new CheckBox {
+            this._dryRun = new ThemedCheckBox {
                 Text = "Dry run by default",
                 Checked = true,
                 AutoSize = true,
                 Margin = new Padding(8, 10, 8, 0),
             };
-            this._createBackup = new CheckBox {
+            this._createBackup = new ThemedCheckBox {
                 Text = "Create backup",
                 Checked = true,
                 AutoSize = true,
@@ -174,7 +195,16 @@ namespace EidoTiaWorkbench.Views {
             };
             this._conflictPolicy.DataSource = Enum.GetValues(typeof(ImportConflictPolicy));
             this._conflictPolicy.SelectedItem = ImportConflictPolicy.Ask;
-            import.Click += (s, e) => this.ImportSelectedRequested?.Invoke(this, EventArgs.Empty);
+            import.Click += (s, e) => {
+                if (this._dryRun.Checked) {
+                    this.DryRunRequested?.Invoke(this, EventArgs.Empty);
+                }
+                else {
+                    this.ImportSelectedRequested?.Invoke(this, EventArgs.Empty);
+                }
+            };
+            this._dryRun.CheckedChanged += (s, e) => import.Text = this._dryRun.Checked ? "Preview selected" : "REAL IMPORT";
+            import.Text = "Preview selected";
             dryRun.Click += (s, e) => this.DryRunRequested?.Invoke(this, EventArgs.Empty);
             bottom.Controls.Add(import);
             bottom.Controls.Add(dryRun);
@@ -270,7 +300,9 @@ namespace EidoTiaWorkbench.Views {
         /// <param name="artifacts">Workspace artifacts to display.</param>
         public void SetArtifacts(IEnumerable<RepositoryArtifact> artifacts) {
             this._artifacts = (artifacts ?? Enumerable.Empty<RepositoryArtifact>()).ToList();
-            var signature = string.Join("|", this._artifacts
+            var signature = string.Join(
+                "|",
+                this._artifacts
                 .Select(a => a.Item.LogicalKey + ":" + a.State)
                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToArray());

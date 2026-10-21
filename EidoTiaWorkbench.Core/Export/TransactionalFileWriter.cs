@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// TransactionalFileWriter.cs
+// Writes export payloads through a same-directory temporary file and promotes them atomically.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.IO;
 using System.Text;
@@ -49,12 +55,14 @@ namespace EidoTiaWorkbench.Core.Export {
 
                 if (File.Exists(destinationPath)) {
                     File.Replace(tempPath, destinationPath, null, true);
-                } else {
+                }
+                else {
                     File.Move(tempPath, destinationPath);
                 }
 
                 return hash;
-            } finally {
+            }
+            finally {
                 TryDelete(tempPath);
             }
         }
@@ -84,7 +92,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 if (File.Exists(path)) {
                     File.Delete(path);
                 }
-            } catch {
+            }
+            catch {
                 // Temporary cleanup is best effort; a stale temp file must not hide the export result.
             }
         }

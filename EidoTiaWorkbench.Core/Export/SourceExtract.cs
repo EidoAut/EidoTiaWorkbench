@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// SourceExtract.cs
+// Best-effort extraction of human-friendly sources from TIA export XML.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,7 +87,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 }
 
                 return text;
-            } catch {
+            }
+            catch {
                 // Parsing failed; treat as no source.
                 return null;
             }
@@ -147,7 +154,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 }
 
                 return text;
-            } catch {
+            }
+            catch {
                 // Parsing failed; treat as no source.
                 return null;
             }
@@ -234,7 +242,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 }
 
                 return sb.ToString();
-            } catch {
+            }
+            catch {
                 // If parsing fails, return a minimal stub.
                 sb.AppendLine("Unable to parse XML to generate a summary.");
                 return sb.ToString();

@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ActivityLogControl.cs
+// Displays, filters, copies, and exports activity log entries.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +41,7 @@ namespace EidoTiaWorkbench.Controls {
                 ColumnCount = 1,
                 RowCount = 3,
             };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 70F));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
@@ -84,10 +91,16 @@ namespace EidoTiaWorkbench.Controls {
                 AutoGenerateColumns = false,
             };
             AppTheme.StyleGrid(this._grid);
+            this._grid.CellFormatting += (sender, e) => {
+                if (e.RowIndex >= 0 && this._grid.Columns[e.ColumnIndex].DataPropertyName == "Severity") {
+                    var severity = Convert.ToString(e.Value);
+                    e.CellStyle.ForeColor = severity == "Error" ? ThemeColors.Error : severity == "Warning" ? ThemeColors.Warning : ThemeColors.TextPrimary;
+                }
+            };
 
             // Fixed grid column widths preserve scanability; the message column absorbs remaining space.
-            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Time", DataPropertyName = "TimeText", Width = 80 });
-            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Severity", DataPropertyName = "Severity", Width = 82 });
+            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Time", DataPropertyName = "TimeText", Width = 100 });
+            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Severity", DataPropertyName = "Severity", Width = 112 });
             this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Operation", DataPropertyName = "Operation", Width = 120 });
             this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Artifact", DataPropertyName = "Artifact", Width = 160 });
             this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Target", DataPropertyName = "Target", Width = 160 });

@@ -2,71 +2,44 @@
 
 Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
-WinForms utility for **TIA Portal Openness V21** that scans, exports, imports, and validates PLC artifacts and classic WinCC HMI artifacts in a structured engineering workspace.
+WinForms engineering workspace with **offline validation** and an isolated **TIA Portal V21 adapter**.
 
-![Eido TIA Workbench export view](docs/images/eido-tia-workbench-export.jpg)
+The desktop and Core no longer load or reference Siemens assemblies. Engineering
+commands run in a separate .NET Framework 4.8 x64 worker. The application opens
+without Openness installed; Settings provides installation discovery, automatic or
+manual selection, custom paths and capability diagnostics.
 
-## Requirements
+V17–V20 are recognized by discovery but **have no implemented adapter**. They are
+not advertised as supported. See the [compatibility matrix and limitations](docs/Modernization.md).
 
-- TIA Portal V21 installed.
-- TIA Portal Openness V21 installed and enabled.
-- The Windows user allowed to use Openness according to the Siemens installation requirements.
-- .NET Framework 4.8 Developer Pack.
-- Visual Studio/MSBuild with C# support.
-- x64 build and runtime only.
+## Requirements and build
 
-## Siemens Openness DLLs
-
-Siemens DLLs are not included in this repository and must not be copied or redistributed.
-
-The project references the official local V21 assemblies from:
-
-`C:\Program Files\Siemens\Automation\Portal V21\PublicAPI\V21\net48\`
-
-Required references in `EidoTiaWorkbench.Core`:
-
-- `Siemens.Engineering.Base.dll`
-- `Siemens.Engineering.Step7.dll`
-- `Siemens.Engineering.WinCC.dll`
-
-All Siemens references are configured with `Copy Local = False` (`Private=False`). They are resolved from the local TIA Portal installation at runtime and are not redistributed.
-
-Classic WinCC support is based on the installed public V21 XML documentation and DLLs. Supported classic HMI artifacts include screens, templates, popups, slide-ins, HMI tag tables, HMI connections, text lists, graphic lists, user cycles, VB scripts, global screen elements, and screen overview. Unified exchange, hardware CAx, PLC external source export, and per-list PLC alarm text list XML exchange are classified conservatively when the public API does not expose a safe per-artifact round-trip.
-
-## Runtime Resolution
-
-At startup the WinForms application resolves Openness V21 assemblies in this order:
-
-1. Environment variable `TIA_OPENNESS_V21`.
-2. `C:\Program Files\Siemens\Automation\Portal V21\PublicAPI\V21`
-3. `C:\Program Files\Siemens\Automation\Portal V21\PublicAPI\V21\net48`
-4. Equivalent `Program Files (x86)` paths.
-
-`TIA_OPENNESS_V21` may point either to `PublicAPI\V21` or directly to `PublicAPI\V21\net48`.
-
-After locating PublicAPI, the application also adds the corresponding `Portal V21\Bin` folder to the process assembly/native DLL search path. This is required by the Siemens Openness runtime when it initializes `Siemens.Engineering.TiaPortal`.
-
-If Openness V21 is missing or cannot be loaded, the application shows a startup error with the path that must be fixed.
-
-## Build
-
-The solution uses `StyleCop.Analyzers` through `PackageReference`, so run restore when building from a clean checkout.
-
-Build the solution in Release x64:
+Windows, .NET Framework 4.8 and x64. Build with Visual Studio/MSBuild and restore
+StyleCop.Analyzers. The full solution requires the local V21 SDK; only Core and
+OfflineTests can be built without Siemens.
 
 ```powershell
 msbuild EidoTiaWorkbench.slnx /restore /p:Configuration=Release /p:Platform=x64
+msbuild EidoTiaWorkbench.OfflineTests/EidoTiaWorkbench.OfflineTests.csproj /restore /p:Configuration=Debug /p:Platform=x64
 ```
 
-or build the WinForms project directly:
+For nonstandard build installations set `/p:OpennessV21Path=<PublicAPI V21 net48 path>`.
+Deploy EIDO's Desktop, Core, Worker and Openness.V21 outputs together. **Never copy
+or redistribute Siemens DLLs.** All proprietary references retain `Private=False`.
 
-```powershell
-msbuild EidoTiaWorkbench\EidoTiaWorkbench.WinForms.csproj /restore /p:Configuration=Release /p:Platform=x64
-```
+## Runtime selection
 
-The build output must not contain Siemens DLLs. They are loaded at runtime from the local TIA Portal V21 installation.
+Settings → TIA Portal Integration reads both Windows registry views under
+`HKLM\SOFTWARE\Siemens\Automation\Openness`, standard installation paths,
+a custom directory and `TIA_OPENNESS`. `TIA_OPENNESS_V21` remains a deprecated
+fallback. Assembly identity validation and worker loading precede engineering work.
+Automatic selects the highest implemented adapter. An unavailable manual choice
+stays offline; it never silently connects with another version. Disconnect and
+finish all work before changing the selected runtime.
 
-Style and analyzer conventions are documented in `STYLE_GUIDE.md`.
+An installation being detected does not certify permissions or project compatibility.
+The [architecture and verification record](docs/Modernization.md) distinguishes those states.
+The [corporate C# guide](docs/EIDO_CSharp_Programming_Style_Guide_v1.0.md) defines coding rules.
 
 ## Repository Layout
 
@@ -92,7 +65,7 @@ PLC XML can be normalized for deterministic diffs. HMI screen XML is preserved b
 2. Open or select a TIA project.
 3. Scan PLC artifacts and classic HMI artifacts.
 4. Export selected items or all items to the chosen repository folder.
-5. Import selected repository artifacts back into the open project when needed. Existing HMI artifacts can be skipped or replaced, and replacement exports a backup first when backup mode is enabled.
+5. Import selected repository artifacts back into the open project when needed. Existing PLC and HMI artifacts require an explicit Skip or Replace decision. Ask blocks replacement until resolved. Enabled backups must complete before replacement.
 
 Long-running commands share one operation state model. The shell disables the active view, shows the busy cursor, updates status text immediately, and uses determinate progress when the amount of work is known or marquee progress when it is not.
 
@@ -120,7 +93,7 @@ Run tests after a Debug build:
 .\EidoTiaWorkbench.Tests\bin\x64\Debug\EidoTiaWorkbench.Tests.exe
 ```
 
-Final UI validation screenshots are stored in `validation-screenshots` and cover dashboard, export, import, settings, and the about dialog.
+Synthetic layout renders are generated under `validation-screenshots/modernization` by `tools/Test-VisualLayout.ps1`. Native Windows DPI and live project round-trips remain separate manual acceptance checks.
 
 ## Contributing and License
 

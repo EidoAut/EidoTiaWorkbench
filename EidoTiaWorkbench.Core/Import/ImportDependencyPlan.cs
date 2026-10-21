@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportDependencyPlan.cs
+// Contains the dependency-ordered import list plus planner diagnostics.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Collections.Generic;
 using EidoTiaWorkbench.Core.Inventory;
 

@@ -1,16 +1,23 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// TiaPortalInstanceInfo.cs
+// Provides a UI-safe descriptor for one attachable TIA Portal instance.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 
 namespace EidoTiaWorkbench.Core.Openness {
     /// <summary>
     /// Provides a UI-safe descriptor for one attachable TIA Portal instance.
     /// </summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class TiaPortalInstanceInfo {
         /// <summary>
         /// Initializes a new instance of the <see cref="TiaPortalInstanceInfo"/> class.
         /// </summary>
-        /// <param name="instanceIndex">Index used by Openness to attach to the running process.</param>
+        /// <param name="instanceIndex">Stable process ID used to re-resolve the selected running process.</param>
         /// <param name="processId">Operating system process identifier, when Openness exposes it.</param>
         /// <param name="displayName">Display name shown in the selection UI.</param>
         /// <param name="projectPath">Currently open project path reported by the process, if available.</param>
@@ -22,31 +29,35 @@ namespace EidoTiaWorkbench.Core.Openness {
         }
 
         /// <summary>
-        /// Gets the index used by Openness to attach to the running process.
+        /// Gets the stable process ID (legacy property name retained for compatibility).
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int InstanceIndex {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the operating system process identifier, when Openness exposes it.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int? ProcessId {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the display name shown in the selection UI.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string DisplayName {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the currently open project path reported by the process, if available.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string ProjectPath {
-            get;
+            get; private set;
         }
 
         /// <summary>

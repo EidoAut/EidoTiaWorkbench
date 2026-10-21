@@ -37,18 +37,6 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Siemens.Engineering.Base, Version=21.0.0.0, Culture=neutral, PublicKeyToken=29bfe5fdf4ba5d3b, processorArchitecture=MSIL">
-      <HintPath>C:\Program Files\Siemens\Automation\Portal V21\PublicAPI\V21\net48\Siemens.Engineering.Base.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Siemens.Engineering.Step7, Version=21.0.0.0, Culture=neutral, PublicKeyToken=29bfe5fdf4ba5d3b, processorArchitecture=MSIL">
-      <HintPath>C:\Program Files\Siemens\Automation\Portal V21\PublicAPI\V21\net48\Siemens.Engineering.Step7.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Siemens.Engineering.WinCC, Version=21.0.0.0, Culture=neutral, PublicKeyToken=29bfe5fdf4ba5d3b, processorArchitecture=MSIL">
-      <HintPath>C:\Program Files\Siemens\Automation\Portal V21\PublicAPI\V21\net48\Siemens.Engineering.WinCC.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -60,7 +48,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Export\ExportService.cs" />
     <Compile Include="Export\ArtifactExportPreflight.cs" />
     <Compile Include="Export\ArtifactExportRecord.cs" />
     <Compile Include="Export\ExportError.cs" />
@@ -77,6 +64,7 @@
     <Compile Include="Export\ExportWarningException.cs" />
     <Compile Include="Export\XmlNormalizeService.cs" />
     <Compile Include="Import\ImportError.cs" />
+    <Compile Include="Import\ImportConflictDecision.cs" />
     <Compile Include="Import\ImportDependencyIssue.cs" />
     <Compile Include="Import\ImportDependencyPlan.cs" />
     <Compile Include="Import\ImportDependencyPlanner.cs" />
@@ -84,7 +72,6 @@
     <Compile Include="Import\ImportPreflightValidator.cs" />
     <Compile Include="Import\ImportProgressInfo.cs" />
     <Compile Include="Import\ImportResult.cs" />
-    <Compile Include="Import\ImportService.cs" />
     <Compile Include="Import\ImportValidationIssue.cs" />
     <Compile Include="Import\ImportValidationSeverity.cs" />
     <Compile Include="Inventory\RepositoryArtifact.cs" />
@@ -103,21 +90,18 @@
     <Compile Include="Model\IArtifactAdapter.cs" />
     <Compile Include="Model\ExportProfile.cs" />
     <Compile Include="Model\ImportConflictPolicy.cs" />
-    <Compile Include="Openness\HmiInventoryService.cs" />
-    <Compile Include="Openness\PlcInventoryService.cs" />
     <Compile Include="Openness\StaWorker.cs" />
     <Compile Include="Openness\TiaSessionHealth.cs" />
     <Compile Include="Openness\TiaSessionHealthStatus.cs" />
     <Compile Include="Openness\TiaPortalInstanceInfo.cs" />
     <Compile Include="Openness\TiaProjectInfo.cs" />
-    <Compile Include="Openness\TiaSessionService.cs" />
+    <Compile Include="Integration\*.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilities\FileLogger.cs" />
     <Compile Include="Utilities\ExceptionDiagnosticFormatter.cs" />
     <Compile Include="Utilities\HashHelper.cs" />
     <Compile Include="Utilities\ILogger.cs" />
     <Compile Include="Utilities\NullLogger.cs" />
-    <Compile Include="Utilities\OpennessExportOptionPolicy.cs" />
     <Compile Include="Utilities\PathHelper.cs" />
     <Compile Include="Utilities\ReflectionCache.cs" />
   </ItemGroup>

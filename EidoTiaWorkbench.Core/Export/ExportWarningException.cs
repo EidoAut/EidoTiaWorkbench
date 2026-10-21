@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportWarningException.cs
+// Signals a non-fatal export condition that should be recorded as a warning.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using EidoTiaWorkbench.Core.Model;
 

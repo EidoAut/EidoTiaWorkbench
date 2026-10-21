@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ManifestService.cs
+// Reads/writes the manifest file used for incremental exports.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -103,9 +109,25 @@ namespace EidoTiaWorkbench.Core.Export {
             // Ensure the meta folder exists.
             Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
 
-            using (var fs = File.Create(path)) {
-                var ser = new DataContractJsonSerializer(typeof(Manifest));
-                ser.WriteObject(fs, manifest);
+            var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try {
+                using (var fs = File.Create(temporary)) {
+                    var ser = new DataContractJsonSerializer(typeof(Manifest));
+                    ser.WriteObject(fs, manifest);
+                    fs.Flush(true);
+                }
+
+                if (File.Exists(path)) {
+                    File.Replace(temporary, path, null);
+                }
+                else {
+                    File.Move(temporary, path);
+                }
+            }
+            finally {
+                if (File.Exists(temporary)) {
+                    File.Delete(temporary);
+                }
             }
         }
 
@@ -200,7 +222,8 @@ namespace EidoTiaWorkbench.Core.Export {
             if (entry != null) {
                 if (entry.Files != null && entry.Files.Count > 0) {
                     result.AddRange(entry.Files);
-                } else if (!string.IsNullOrWhiteSpace(entry.PrimaryPath)) {
+                }
+                else if (!string.IsNullOrWhiteSpace(entry.PrimaryPath)) {
                     result.Add(entry.PrimaryPath);
                 }
             }
@@ -234,13 +257,13 @@ namespace EidoTiaWorkbench.Core.Export {
             /// Gets or sets the TIA Portal version associated with the export run.
             /// </summary>
             [DataMember]
-            public string TiaVersion { get; set; } = "V21";
+            public string TiaVersion { get; set; } = string.Empty;
 
             /// <summary>
             /// Gets or sets the Openness API version associated with the export run.
             /// </summary>
             [DataMember]
-            public string OpennessVersion { get; set; } = "V21";
+            public string OpennessVersion { get; set; } = string.Empty;
 
             /// <summary>
             /// Gets or sets the UTC timestamp at which the last export run started.

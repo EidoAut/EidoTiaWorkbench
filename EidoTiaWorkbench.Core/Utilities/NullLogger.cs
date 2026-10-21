@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// NullLogger.cs
+// Provides an implementation that intentionally discards every message.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 
 namespace EidoTiaWorkbench.Core.Utilities {

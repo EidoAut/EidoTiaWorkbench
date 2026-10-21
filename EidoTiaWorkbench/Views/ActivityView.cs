@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ActivityView.cs
+// Hosts the activity log page.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Windows.Forms;
 using EidoTiaWorkbench.Application;
 using EidoTiaWorkbench.Controls;
@@ -18,13 +24,14 @@ namespace EidoTiaWorkbench.Views {
         public ActivityView() {
             this.Dock = DockStyle.Fill;
             this.BackColor = ThemeColors.Background;
-            this.Padding = new Padding(18);
+            this.Padding = new Padding(ThemeMetrics.Xl);
 
             var root = new TableLayoutPanel {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
                 RowCount = 2,
             };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 

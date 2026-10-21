@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportService.cs
+// Exports selected PLC artifacts from the open TIA Portal project into structured workspace payload files.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,7 +16,9 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Xml.Linq;
-
+using EidoTiaWorkbench.Core.Model;
+using EidoTiaWorkbench.Core.Openness;
+using EidoTiaWorkbench.Core.Utilities;
 using Siemens.Engineering;
 using Siemens.Engineering.Hmi;
 using Siemens.Engineering.Hmi.Screen;
@@ -20,10 +28,6 @@ using Siemens.Engineering.SW;
 using Siemens.Engineering.SW.Blocks;
 using Siemens.Engineering.SW.Tags;
 using Siemens.Engineering.SW.Types;
-
-using EidoTiaWorkbench.Core.Model;
-using EidoTiaWorkbench.Core.Openness;
-using EidoTiaWorkbench.Core.Utilities;
 using static EidoTiaWorkbench.Core.Export.ManifestService;
 
 namespace EidoTiaWorkbench.Core.Export {
@@ -167,6 +171,13 @@ namespace EidoTiaWorkbench.Core.Export {
             Directory.CreateDirectory(runRoot);
 
             var manifest = incremental ? this._manifestService.Load(runRoot) : new Manifest();
+            var sourceVersion = EidoTiaWorkbench.Core.Integration.OpennessDiscovery.ParseVersion(manifest.TiaVersion);
+            if (sourceVersion != 0 && sourceVersion != 21) {
+                throw new InvalidOperationException("Incremental export cannot mix TIA versions in one manifest.");
+            }
+
+            manifest.TiaVersion = "V21";
+            manifest.OpennessVersion = typeof(Siemens.Engineering.TiaPortal).Assembly.GetName().Version.ToString();
             var result = new ExportResult {
                 OutputRoot = runRoot,
                 ManifestPath = this._manifestService.GetManifestPath(runRoot),
@@ -206,7 +217,8 @@ namespace EidoTiaWorkbench.Core.Export {
 
                     if (healthBefore.IsHealthy) {
                         this._log.Warn("Export session recovered before artifact attempt: " + item);
-                    } else {
+                    }
+                    else {
                         sessionFailureKey = item.LogicalKey;
                         processed = MarkRemainingAborted(
                             ordered,
@@ -263,7 +275,8 @@ namespace EidoTiaWorkbench.Core.Export {
                     var xml = this.ExportSingleToString(item);
                     if (item.IsPlc && normalizePlcXml) {
                         xml = this._xmlNormalize.Normalize(xml);
-                    } else if (item.IsHmi && !preserveHmiXml && normalizePlcXml) {
+                    }
+                    else if (item.IsHmi && !preserveHmiXml && normalizePlcXml) {
                         xml = this._xmlNormalize.Normalize(xml);
                     }
 
@@ -299,7 +312,8 @@ namespace EidoTiaWorkbench.Core.Export {
                     AddRecord(result, item, record, null);
                     processed++;
                     progress?.Invoke(processed, total, item, null);
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     var healthAfter = this._session.CheckHealthOnSta();
                     var classification = ExportFailureClassifier.Classify(ex, healthAfter, item);
                     var recoveryAttempted = false;
@@ -396,7 +410,8 @@ namespace EidoTiaWorkbench.Core.Export {
 
             if (record.Status == ArtifactExportStatus.Failed) {
                 result.Errors.Add(new ExportError(item, exception ?? new InvalidOperationException(record.Message)));
-            } else if (record.Status == ArtifactExportStatus.Restricted ||
+            }
+            else if (record.Status == ArtifactExportStatus.Restricted ||
                        record.Status == ArtifactExportStatus.Unavailable ||
                        record.Status == ArtifactExportStatus.Unsupported) {
                 result.Warnings.Add(new ExportWarning(item, exception ?? new ExportWarningException(record.Message, item)));
@@ -506,13 +521,15 @@ namespace EidoTiaWorkbench.Core.Export {
                     { record.PrimaryPath, record.Hash },
                 };
                 entry.AggregateHash = record.Hash;
-            } else if (record.Status == ArtifactExportStatus.SkippedUnchanged) {
+            }
+            else if (record.Status == ArtifactExportStatus.SkippedUnchanged) {
                 entry.Sha256 = string.IsNullOrWhiteSpace(record.Hash) ? entry.Sha256 : record.Hash;
                 entry.PrimaryPath = string.IsNullOrWhiteSpace(record.PrimaryPath) ? entry.PrimaryPath : record.PrimaryPath;
                 if ((entry.Files == null || entry.Files.Count == 0) && !string.IsNullOrWhiteSpace(entry.PrimaryPath)) {
                     entry.Files = new List<string> { entry.PrimaryPath };
                 }
-            } else if (existing == null) {
+            }
+            else if (existing == null) {
                 entry.Sha256 = string.Empty;
                 entry.PrimaryPath = string.Empty;
                 entry.Files = new List<string>();
@@ -1215,7 +1232,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 object found;
                 try {
                     found = find.Invoke(collection, new object[] { name });
-                } catch (TargetInvocationException ex) {
+                }
+                catch (TargetInvocationException ex) {
                     var unwrapped = UnwrapReflectionException(ex, collection.GetType().FullName + ".Find");
                     AddExceptionData(unwrapped, "OpennessCollectionType", collection.GetType().FullName);
                     AddExceptionData(unwrapped, "FindName", name);
@@ -1281,7 +1299,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 try {
                     withOptions.Invoke(artifact, new object[] { destination, exportOption });
                     return;
-                } catch (TargetInvocationException ex) {
+                }
+                catch (TargetInvocationException ex) {
                     ThrowExportInvocationException(ex, artifact, destination, kind, withOptions, exportOption);
                     throw;
                 }
@@ -1296,7 +1315,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 try {
                     fileOnly.Invoke(artifact, new object[] { destination });
                     return;
-                } catch (TargetInvocationException ex) {
+                }
+                catch (TargetInvocationException ex) {
                     ThrowExportInvocationException(ex, artifact, destination, kind, fileOnly, null);
                     throw;
                 }
@@ -1437,7 +1457,8 @@ namespace EidoTiaWorkbench.Core.Export {
 
             try {
                 return exportOption + " (" + Convert.ToInt64(exportOption) + ")";
-            } catch {
+            }
+            catch {
                 return exportOption.ToString();
             }
         }
@@ -1461,7 +1482,8 @@ namespace EidoTiaWorkbench.Core.Export {
 
                 var value = property.GetValue(artifact, null);
                 return value == null ? string.Empty : value.ToString();
-            } catch {
+            }
+            catch {
                 return string.Empty;
             }
         }
@@ -1479,7 +1501,8 @@ namespace EidoTiaWorkbench.Core.Export {
 
             try {
                 exception.Data[key] = value ?? string.Empty;
-            } catch {
+            }
+            catch {
                 // Exception.Data is diagnostic only; never replace the original Openness exception.
             }
         }
@@ -1872,7 +1895,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 if (File.Exists(path)) {
                     File.Delete(path);
                 }
-            } catch { /* ignore */
+            }
+            catch { /* ignore */
             }
         }
 
@@ -1885,7 +1909,35 @@ namespace EidoTiaWorkbench.Core.Export {
                 if (Directory.Exists(path)) {
                     Directory.Delete(path, recursive: true);
                 }
-            } catch { /* ignore */
+            }
+            catch { /* ignore */
+            }
+        }
+
+        /// <summary>
+        /// Verifies an Openness artifact exposes a file-based export method before invoking it.
+        /// </summary>
+        /// <param name="artifact">Resolved Openness artifact.</param>
+        /// <param name="capabilityName">Capability name used in diagnostics when the method is missing.</param>
+        private static void EnsureExportMethodAvailable(object artifact, string capabilityName) {
+            if (artifact == null) {
+                throw new InvalidOperationException("Cannot inspect export capability for a null Openness artifact.");
+            }
+
+            var hasFileExport = artifact.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .Any(m => {
+                    if (!string.Equals(m.Name, "Export", StringComparison.OrdinalIgnoreCase)) {
+                        return false;
+                    }
+
+                    var p = m.GetParameters();
+                    return (p.Length == 2 &&
+                            p[0].ParameterType == typeof(FileInfo) &&
+                            p[1].ParameterType == typeof(Siemens.Engineering.ExportOptions)) ||
+                           (p.Length == 1 && p[0].ParameterType == typeof(FileInfo));
+                });
+            if (!hasFileExport) {
+                throw new MissingMethodException(artifact.GetType().FullName, capabilityName);
             }
         }
 
@@ -1930,7 +1982,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 }
 
                 // Other artifact kinds: do nothing for now.
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 // Source generation is best-effort; never fail the export because of it.
                 this._log.Warn("Source generation failed for " + item + ": " + ex.Message);
             }
@@ -1957,7 +2010,8 @@ namespace EidoTiaWorkbench.Core.Export {
 
                 // Read as UTF-8 (Openness typically produces UTF-8 XML).
                 return File.ReadAllText(tmp, Encoding.UTF8);
-            } finally {
+            }
+            finally {
                 // Best-effort cleanup: do not throw if cleanup fails.
                 TryDelete(tmp);
                 TryDeleteDirectory(tmpDir);
@@ -2246,33 +2300,6 @@ namespace EidoTiaWorkbench.Core.Export {
 
             EnsureExportMethodAvailable(artifact, "GraphicList.Export");
             InvokeExport(artifact, destination, item.Kind, this._log);
-        }
-
-        /// <summary>
-        /// Verifies an Openness artifact exposes a file-based export method before invoking it.
-        /// </summary>
-        /// <param name="artifact">Resolved Openness artifact.</param>
-        /// <param name="capabilityName">Capability name used in diagnostics when the method is missing.</param>
-        private static void EnsureExportMethodAvailable(object artifact, string capabilityName) {
-            if (artifact == null) {
-                throw new InvalidOperationException("Cannot inspect export capability for a null Openness artifact.");
-            }
-
-            var hasFileExport = artifact.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                .Any(m => {
-                    if (!string.Equals(m.Name, "Export", StringComparison.OrdinalIgnoreCase)) {
-                        return false;
-                    }
-
-                    var p = m.GetParameters();
-                    return (p.Length == 2 &&
-                            p[0].ParameterType == typeof(FileInfo) &&
-                            p[1].ParameterType == typeof(Siemens.Engineering.ExportOptions)) ||
-                           (p.Length == 1 && p[0].ParameterType == typeof(FileInfo));
-                });
-            if (!hasFileExport) {
-                throw new MissingMethodException(artifact.GetType().FullName, capabilityName);
-            }
         }
 
         /// <summary>

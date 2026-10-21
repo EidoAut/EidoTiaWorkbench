@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// RepositoryArtifact.cs
+// Describes a repository XML file and the logical TIA artifact it can import.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using EidoTiaWorkbench.Core.Model;
 
@@ -7,6 +13,7 @@ namespace EidoTiaWorkbench.Core.Inventory {
     /// <summary>
     /// Describes a repository XML file and the logical TIA artifact it can import.
     /// </summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class RepositoryArtifact {
         /// <summary>
         /// Initializes a new instance of the <see cref="RepositoryArtifact"/> class.
@@ -42,50 +49,57 @@ namespace EidoTiaWorkbench.Core.Inventory {
         /// <summary>
         /// Gets the logical TIA artifact represented by the repository file.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public ExportItem Item {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the absolute path to the XML file in the repository.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string RepositoryPath {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the repository-relative path used as the manifest key.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string RelativePath {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the comparison state calculated for the artifact.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public RepositoryArtifactState State {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the current SHA-256 hash of the XML file, or <see langword="null"/> if hashing failed.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string Sha256 {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the UTC timestamp recorded in the manifest for the last export.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string LastExportUtc {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets an optional warning explaining unsupported or invalid repository content.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string Warning {
-            get;
+            get; private set;
         }
     }
 }

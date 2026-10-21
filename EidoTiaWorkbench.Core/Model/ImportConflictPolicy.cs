@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportConflictPolicy.cs
+// Defines how repository imports handle an artifact that already exists in the target TIA project.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Model {
     /// <summary>
     /// Defines how repository imports handle an artifact that already exists in the target TIA project.

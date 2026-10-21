@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// DashboardPresenter.cs
+// Wires dashboard actions to project, scan, export, and repository navigation.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Application;
@@ -22,16 +28,18 @@ namespace EidoTiaWorkbench.Presentation {
             MainController controller,
             ApplicationState state,
             Action<string> navigate) {
-            view.AttachRequested += (s, e) => FireAndReport(view, async () => {
-                await controller.RefreshPortalInstancesAsync();
-                if (state.PortalInstances.Count > 1) {
-                    navigate("Project");
-                    MessageBox.Show(view, "Select the intended TIA Portal instance in Project view.", "Multiple instances", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
+            view.AttachRequested += (s, e) => FireAndReport(
+                view,
+                async () => {
+                    await controller.RefreshPortalInstancesAsync();
+                    if (state.PortalInstances.Count > 1) {
+                        navigate("Project");
+                        MessageBox.Show(view, "Select the intended TIA Portal instance in Project view.", "Multiple instances", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
 
-                await controller.AttachToPortalAsync(null);
-            });
+                    await controller.AttachToPortalAsync(null);
+                });
 
             view.OpenProjectRequested += (s, e) => navigate("Project");
             view.ScanRequested += (s, e) => navigate("Export");

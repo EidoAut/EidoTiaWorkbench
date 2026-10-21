@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// SidebarNavigation.cs
+// Provides the shell sidebar navigation with main and bottom action groups.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -34,9 +40,14 @@ namespace EidoTiaWorkbench.Controls {
             };
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
             this._top = CreatePanel();
             this._bottom = CreatePanel();
+            this._bottom.AutoSize = true;
+            this._bottom.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            this._top.SizeChanged += (s, e) => ResizeNavigationControls(this._top);
+            this._bottom.SizeChanged += (s, e) => ResizeNavigationControls(this._bottom);
             this._top.Controls.Add(CreateBrandBlock());
             layout.Controls.Add(this._top, 0, 0);
             layout.Controls.Add(this._bottom, 0, 1);
@@ -55,6 +66,16 @@ namespace EidoTiaWorkbench.Controls {
         /// <param name="text">Text shown on the button.</param>
         /// <param name="icon">Icon name passed to the icon provider.</param>
         public void AddMainItem(string key, string text, string icon) {
+            if (key == "Dashboard" || key == "Export" || key == "Activity") {
+                this._top.Controls.Add(new Label {
+                    Text = key == "Dashboard" ? "WORKSPACE" : key == "Export" ? "ENGINEERING" : "SYSTEM",
+                    AutoSize = true,
+                    ForeColor = ThemeColors.TextSecondary,
+                    Font = ThemeFonts.Badge,
+                    Margin = new Padding(12, 8, 0, 4),
+                });
+            }
+
             var button = this.CreateButton(key, text, icon);
             this._top.Controls.Add(button);
             this._buttons[key] = button;
@@ -80,16 +101,24 @@ namespace EidoTiaWorkbench.Controls {
             this._activeKey = key;
             foreach (var pair in this._buttons) {
                 var active = string.Equals(pair.Key, this._activeKey, StringComparison.OrdinalIgnoreCase);
-                pair.Value.BackColor = active ? ThemeColors.Primary : ThemeColors.Sidebar;
-                pair.Value.ForeColor = Color.White;
-                pair.Value.FlatAppearance.BorderColor = active ? ThemeColors.Primary : ThemeColors.Sidebar;
+                ((WorkbenchNavigationButton)pair.Value).Selected = active;
+                pair.Value.Invalidate();
+                pair.Value.BackColor = active ? ThemeColors.SidebarHover : ThemeColors.Sidebar;
+                pair.Value.ForeColor = active ? ThemeColors.PrimaryHover : ThemeColors.TextSecondary;
+                pair.Value.FlatAppearance.BorderColor = active ? ThemeColors.SidebarHover : ThemeColors.Sidebar;
             }
         }
 
         /// <summary>
-        /// Creates one vertical navigation group panel.
+        /// Fits navigation buttons to the available scroll viewport.
         /// </summary>
-        /// <returns>The configured navigation group panel.</returns>
+        /// <param name="panel">Navigation group whose children need resizing.</param>
+        private static void ResizeNavigationControls(FlowLayoutPanel panel) {
+            foreach (Control child in panel.Controls) {
+                child.Width = Math.Max(100, panel.ClientSize.Width - child.Margin.Horizontal - SystemInformation.VerticalScrollBarWidth);
+            }
+        }
+
         private static FlowLayoutPanel CreatePanel() {
             return new FlowLayoutPanel {
                 Dock = DockStyle.Fill,
@@ -118,27 +147,26 @@ namespace EidoTiaWorkbench.Controls {
             block.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             block.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             block.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            block.Controls.Add(new Label {
-                Text = "EIDO",
-                AutoSize = true,
-                Font = new Font("Consolas", 14F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = ThemeColors.PrimaryHover,
-                Margin = Padding.Empty,
-            }, 0, 0);
-            block.Controls.Add(new Label {
-                Text = "TIA WORKBENCH",
-                AutoSize = true,
-                Font = ThemeFonts.Badge,
-                ForeColor = Color.White,
-                Margin = new Padding(0, 1, 0, 0),
-            }, 0, 1);
-            block.Controls.Add(new Label {
-                Text = "SYSTEM_READY",
-                AutoSize = true,
-                Font = ThemeFonts.Secondary,
-                ForeColor = ThemeColors.Success,
-                Margin = new Padding(0, 7, 0, 0),
-            }, 0, 2);
+            block.Controls.Add(
+                new Label {
+                    Text = "EIDO",
+                    AutoSize = true,
+                    Font = ThemeFonts.SectionTitle,
+                    ForeColor = ThemeColors.PrimaryHover,
+                    Margin = Padding.Empty,
+                },
+                0,
+                0);
+            block.Controls.Add(
+                new Label {
+                    Text = "TIA WORKBENCH",
+                    AutoSize = true,
+                    Font = ThemeFonts.Badge,
+                    ForeColor = ThemeColors.TextPrimary,
+                    Margin = new Padding(0, 1, 0, 0),
+                },
+                0,
+                1);
             return block;
         }
 
@@ -150,22 +178,23 @@ namespace EidoTiaWorkbench.Controls {
         /// <param name="icon">Icon provider key.</param>
         /// <returns>The configured navigation button.</returns>
         private Button CreateButton(string key, string text, string icon) {
-            var button = new Button {
+            var button = new WorkbenchNavigationButton {
                 Text = text,
                 Name = key,
 
                 // Sidebar buttons have fixed geometry to keep the navigation rail visually stable.
                 Width = 196,
-                Height = 38,
+                Height = 40,
+                AutoSize = false,
                 TextAlign = ContentAlignment.MiddleLeft,
                 ImageAlign = ContentAlignment.MiddleLeft,
                 TextImageRelation = TextImageRelation.ImageBeforeText,
                 Image = IconProvider.Get(icon, Color.White, 17),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = ThemeColors.Sidebar,
-                ForeColor = Color.White,
+                ForeColor = ThemeColors.TextPrimary,
                 Font = ThemeFonts.Body,
-                Margin = new Padding(0, 0, 0, 6),
+                Margin = new Padding(0, 0, 0, 4),
                 Padding = new Padding(8, 0, 8, 0),
                 Cursor = Cursors.Hand,
             };

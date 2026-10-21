@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportPreflightResult.cs
+// Collects issues found before invoking Siemens Openness import.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Collections.Generic;
 using System.Linq;
 

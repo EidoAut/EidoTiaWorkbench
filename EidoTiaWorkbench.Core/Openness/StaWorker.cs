@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// StaWorker.cs
+// Runs all TIA Openness calls on a dedicated STA thread.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -31,12 +37,7 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// </summary>
         private readonly Thread _thread;
 
-        /// <summary>
-        /// Cancellation token used to stop the consuming enumerable on shutdown.
-        /// </summary>
-        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-
-        private bool _disposed;
+        private volatile bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StaWorker"/> class and starts its STA thread.
@@ -74,7 +75,8 @@ namespace EidoTiaWorkbench.Core.Openness {
             this._queue.Add(() => {
                 try {
                     tcs.SetResult(func());
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     tcs.SetException(ex);
                 }
             });
@@ -122,7 +124,8 @@ namespace EidoTiaWorkbench.Core.Openness {
                     }
 
                     tcs.TrySetResult(func());
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     tcs.TrySetException(ex);
                 }
             });
@@ -157,41 +160,22 @@ namespace EidoTiaWorkbench.Core.Openness {
                 return;
             }
 
+            if (Thread.CurrentThread == this._thread) {
+                throw new InvalidOperationException("The owner must dispose the STA worker from another thread.");
+            }
+
             this._disposed = true;
-
-            // Stop accepting new work items.
-            try {
-                this._queue.CompleteAdding();
-            } catch { /* ignore */
-            }
-
-            // Cancel the consuming enumerable so the STA thread can exit.
-            try {
-                this._cts.Cancel();
-            } catch { /* ignore */
-            }
-
-            // Best-effort: wait briefly for the STA thread to finish.
-            try {
-                if (this._thread.IsAlive) {
-                    this._thread.Join(millisecondsTimeout: 5000);
-                }
-            } catch { /* ignore */
-            }
-
-            this._cts.Dispose();
+            this._queue.CompleteAdding();
+            this._thread.Join();
+            this._queue.Dispose();
         }
 
         /// <summary>
         /// Main worker loop: executes queued actions until completion or cancellation.
         /// </summary>
         private void Run() {
-            try {
-                foreach (var action in this._queue.GetConsumingEnumerable(this._cts.Token)) {
-                    action();
-                }
-            } catch (OperationCanceledException) {
-                // Normal shutdown (cts cancelled).
+            foreach (var action in this._queue.GetConsumingEnumerable()) {
+                action();
             }
         }
 

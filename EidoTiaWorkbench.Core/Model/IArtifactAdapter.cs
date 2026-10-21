@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// IArtifactAdapter.cs
+// Declares the pipeline responsibilities owned by one artifact kind.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Model {
     /// <summary>
     /// Declares the pipeline responsibilities owned by one artifact kind.

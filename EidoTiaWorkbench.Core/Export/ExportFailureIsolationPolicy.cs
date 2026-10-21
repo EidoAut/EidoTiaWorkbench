@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportFailureIsolationPolicy.cs
+// Encapsulates queue-level decisions that follow an artifact export failure.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using EidoTiaWorkbench.Core.Model;
 
 namespace EidoTiaWorkbench.Core.Export {

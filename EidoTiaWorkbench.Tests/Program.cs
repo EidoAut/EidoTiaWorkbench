@@ -1,24 +1,37 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// Program.cs
+// Runs regression checks against temporary artifacts without modifying user projects.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using Siemens.Engineering;
 using EidoTiaWorkbench.Core.Export;
 using EidoTiaWorkbench.Core.Import;
 using EidoTiaWorkbench.Core.Inventory;
 using EidoTiaWorkbench.Core.Model;
 using EidoTiaWorkbench.Core.Openness;
 using EidoTiaWorkbench.Core.Utilities;
+using Siemens.Engineering;
 
 namespace EidoTiaWorkbench.Tests {
     /// <summary>
     /// Executes offline regression tests for repository, path, manifest, and model logic.
     /// </summary>
     internal static class Program {
+        private enum ProbeExportOptions {
+            /// <summary>
+            /// Probe-only option that must not match the Siemens overload.
+            /// </summary>
+            WithDefaults = 1,
+        }
+
         /// <summary>
         /// Runs all tests and returns a non-zero process exit code when any assertion fails.
         /// </summary>
@@ -26,6 +39,7 @@ namespace EidoTiaWorkbench.Tests {
         private static int Main() {
             var tests = new List<Tuple<string, Action>>
             {
+                Tuple.Create("Modernization contracts", new Action(ModernizationTests.Run)),
                 Tuple.Create("Sanitize protects Windows paths", new Action(TestSanitize)),
                 Tuple.Create("Artifact catalog and adapter registry are consistent", new Action(TestCatalogConsistency)),
                 Tuple.Create("PLC output path uses PLC root", new Action(TestPlcOutputPath)),
@@ -66,7 +80,8 @@ namespace EidoTiaWorkbench.Tests {
                 try {
                     test.Item2();
                     Console.WriteLine("PASS " + test.Item1);
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     failed++;
                     Console.WriteLine("FAIL " + test.Item1);
                     Console.WriteLine(ex);
@@ -380,9 +395,11 @@ namespace EidoTiaWorkbench.Tests {
                 var plan = new ImportDependencyPlanner().Build(new[] { artifact });
                 var result = new ImportPreflightValidator().Validate(new[] { artifact }, plan);
 
-                AssertTrue(result.Issues.Any(i =>
+                AssertTrue(
+                    result.Issues.Any(i =>
                     i.Severity == ImportValidationSeverity.Error &&
-                    i.Message.IndexOf("Duplicate XML ID", StringComparison.OrdinalIgnoreCase) >= 0), "Duplicate IDs must be reported as preflight errors.");
+                    i.Message.IndexOf("Duplicate XML ID", StringComparison.OrdinalIgnoreCase) >= 0),
+                    "Duplicate IDs must be reported as preflight errors.");
             });
         }
 
@@ -393,7 +410,8 @@ namespace EidoTiaWorkbench.Tests {
             try {
                 typeof(Program).GetMethod("ThrowInnerForFormatter", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[0]);
                 throw new InvalidOperationException("Reflection invocation should have thrown.");
-            } catch (TargetInvocationException ex) {
+            }
+            catch (TargetInvocationException ex) {
                 var diagnostic = ExceptionDiagnosticFormatter.Format(ex);
                 AssertContains(diagnostic, "TargetInvocationException.InnerException");
                 AssertContains(diagnostic, "System.InvalidOperationException");
@@ -413,7 +431,7 @@ namespace EidoTiaWorkbench.Tests {
         private static void TestHmiScreenExportOptionPolicy() {
             AppDomain.CurrentDomain.AssemblyResolve += ResolveTestOpennessAssembly;
 
-            var policyType = typeof(PathHelper).Assembly.GetType("EidoTiaWorkbench.Core.Utilities.OpennessExportOptionPolicy");
+            var policyType = typeof(ExportService).Assembly.GetType("EidoTiaWorkbench.Core.Utilities.OpennessExportOptionPolicy");
             AssertTrue(policyType != null, "Export option policy type must exist.");
 
             var method = policyType.GetMethod("ForArtifact", BindingFlags.Public | BindingFlags.Static);
@@ -668,10 +686,12 @@ namespace EidoTiaWorkbench.Tests {
                 AssertTrue(blockerEntered.Wait(5000), "Blocking STA work item must start.");
 
                 var executed = false;
-                var queued = worker.InvokeAsync(() => {
-                    executed = true;
-                    return 1;
-                }, cancellation.Token);
+                var queued = worker.InvokeAsync(
+                    () => {
+                        executed = true;
+                        return 1;
+                    },
+                    cancellation.Token);
 
                 cancellation.Cancel();
                 AssertEqual(false, queued.IsCompleted, "Queued cancellation must not complete before STA reaches the item.");
@@ -680,7 +700,8 @@ namespace EidoTiaWorkbench.Tests {
                 try {
                     queued.GetAwaiter().GetResult();
                     throw new InvalidOperationException("Cancelled queued work should not run.");
-                } catch (OperationCanceledException) {
+                }
+                catch (OperationCanceledException) {
                     // Expected.
                 }
 
@@ -700,7 +721,8 @@ namespace EidoTiaWorkbench.Tests {
                 try {
                     TransactionalFileWriter.PromoteUtf8Text(path, "<Broken>", ArtifactFormat.Xml);
                     throw new InvalidOperationException("Invalid XML promotion must fail.");
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     AssertContains(ex.GetType().FullName, "XmlException");
                 }
 
@@ -762,7 +784,7 @@ namespace EidoTiaWorkbench.Tests {
         /// </summary>
         /// <returns>The export order policy type.</returns>
         private static Type GetExportOrderPolicyType() {
-            var policyType = typeof(ExportService).Assembly.GetType("EidoTiaWorkbench.Core.Export.ExportOrderPolicy");
+            var policyType = typeof(ExportResult).Assembly.GetType("EidoTiaWorkbench.Core.Export.ExportOrderPolicy");
             AssertTrue(policyType != null, "Export order policy type must exist.");
             return policyType;
         }
@@ -840,6 +862,68 @@ namespace EidoTiaWorkbench.Tests {
         }
 
         /// <summary>
+        /// Writes a text file for repository inventory tests.
+        /// </summary>
+        /// <param name="path">File path to create.</param>
+        /// <param name="content">Text content to write.</param>
+        private static void WriteText(string path, string content) {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllText(path, content, System.Text.Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// Creates a temporary directory, runs a test action, and removes the directory afterwards.
+        /// </summary>
+        /// <param name="action">Test action that receives the temporary directory path.</param>
+        private static void WithTempDirectory(Action<string> action) {
+            var temp = Path.Combine(Path.GetTempPath(), "EidoTiaWorkbench.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(temp);
+            try {
+                action(temp);
+            }
+            finally {
+                if (Directory.Exists(temp)) {
+                    Directory.Delete(temp, recursive: true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Throws when a condition is false.
+        /// </summary>
+        /// <param name="condition">Condition expected to be true.</param>
+        /// <param name="message">Failure message.</param>
+        private static void AssertTrue(bool condition, string message) {
+            if (!condition) {
+                throw new InvalidOperationException(message);
+            }
+        }
+
+        /// <summary>
+        /// Throws when two values are not equal.
+        /// </summary>
+        /// <typeparam name="T">Compared value type.</typeparam>
+        /// <param name="expected">Expected value.</param>
+        /// <param name="actual">Actual value.</param>
+        /// <param name="message">Failure message.</param>
+        private static void AssertEqual<T>(T expected, T actual, string message) {
+            if (!EqualityComparer<T>.Default.Equals(expected, actual)) {
+                throw new InvalidOperationException(message + " Expected: " + expected + ". Actual: " + actual + ".");
+            }
+        }
+
+        /// <summary>
+        /// Throws when a text value does not contain the expected fragment.
+        /// </summary>
+        /// <param name="text">Text to inspect.</param>
+        /// <param name="expectedFragment">Fragment expected to be present.</param>
+        private static void AssertContains(string text, string expectedFragment) {
+            if (text == null || text.IndexOf(expectedFragment, StringComparison.OrdinalIgnoreCase) < 0) {
+                throw new InvalidOperationException("Expected fragment was not found. Fragment: " + expectedFragment + ". Text: " + text + ".");
+            }
+        }
+
+        /// <summary>
         /// Provides extra public properties similar to Siemens Openness exception types.
         /// </summary>
         private sealed class FormatterProbeException : Exception {
@@ -855,22 +939,19 @@ namespace EidoTiaWorkbench.Tests {
             /// Gets a sample Siemens-style diagnostic detail.
             /// </summary>
             public string SiemensDetail {
-                get { return "openness detail"; }
+                get {
+                    return "openness detail";
+                }
             }
 
             /// <summary>
             /// Gets a sample Siemens-style diagnostic code.
             /// </summary>
             public int SiemensErrorCode {
-                get { return 7001; }
+                get {
+                    return 7001;
+                }
             }
-        }
-
-        private enum ProbeExportOptions {
-            /// <summary>
-            /// Probe-only option that must not match the Siemens overload.
-            /// </summary>
-            WithDefaults = 1,
         }
 
         /// <summary>
@@ -881,7 +962,9 @@ namespace EidoTiaWorkbench.Tests {
             /// Gets a Siemens-like public artifact name for diagnostics.
             /// </summary>
             public string Name {
-                get { return "ReflectiveProbe"; }
+                get {
+                    return "ReflectiveProbe";
+                }
             }
 
             /// <summary>
@@ -947,67 +1030,6 @@ namespace EidoTiaWorkbench.Tests {
 
             /// <inheritdoc />
             public void Error(string message, Exception ex = null) {
-            }
-        }
-
-        /// <summary>
-        /// Writes a text file for repository inventory tests.
-        /// </summary>
-        /// <param name="path">File path to create.</param>
-        /// <param name="content">Text content to write.</param>
-        private static void WriteText(string path, string content) {
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            File.WriteAllText(path, content, System.Text.Encoding.UTF8);
-        }
-
-        /// <summary>
-        /// Creates a temporary directory, runs a test action, and removes the directory afterwards.
-        /// </summary>
-        /// <param name="action">Test action that receives the temporary directory path.</param>
-        private static void WithTempDirectory(Action<string> action) {
-            var temp = Path.Combine(Path.GetTempPath(), "EidoTiaWorkbench.Tests", Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(temp);
-            try {
-                action(temp);
-            } finally {
-                if (Directory.Exists(temp)) {
-                    Directory.Delete(temp, recursive: true);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Throws when a condition is false.
-        /// </summary>
-        /// <param name="condition">Condition expected to be true.</param>
-        /// <param name="message">Failure message.</param>
-        private static void AssertTrue(bool condition, string message) {
-            if (!condition) {
-                throw new InvalidOperationException(message);
-            }
-        }
-
-        /// <summary>
-        /// Throws when two values are not equal.
-        /// </summary>
-        /// <typeparam name="T">Compared value type.</typeparam>
-        /// <param name="expected">Expected value.</param>
-        /// <param name="actual">Actual value.</param>
-        /// <param name="message">Failure message.</param>
-        private static void AssertEqual<T>(T expected, T actual, string message) {
-            if (!EqualityComparer<T>.Default.Equals(expected, actual)) {
-                throw new InvalidOperationException(message + " Expected: " + expected + ". Actual: " + actual + ".");
-            }
-        }
-
-        /// <summary>
-        /// Throws when a text value does not contain the expected fragment.
-        /// </summary>
-        /// <param name="text">Text to inspect.</param>
-        /// <param name="expectedFragment">Fragment expected to be present.</param>
-        private static void AssertContains(string text, string expectedFragment) {
-            if (text == null || text.IndexOf(expectedFragment, StringComparison.OrdinalIgnoreCase) < 0) {
-                throw new InvalidOperationException("Expected fragment was not found. Fragment: " + expectedFragment + ". Text: " + text + ".");
             }
         }
     }

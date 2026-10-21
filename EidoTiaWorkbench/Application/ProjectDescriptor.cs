@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ProjectDescriptor.cs
+// Describes the project currently shown by the presentation layer.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Collections.Generic;
 
 namespace EidoTiaWorkbench.Application {

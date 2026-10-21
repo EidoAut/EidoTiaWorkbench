@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportFailureClassification.cs
+// Describes how an Openness or local exception should affect artifact and run state.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using EidoTiaWorkbench.Core.Model;
 
 namespace EidoTiaWorkbench.Core.Export {

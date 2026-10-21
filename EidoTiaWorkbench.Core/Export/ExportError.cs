@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportError.cs
+// Represents one failed export operation.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using EidoTiaWorkbench.Core.Model;
 
@@ -7,6 +13,7 @@ namespace EidoTiaWorkbench.Core.Export {
     /// <summary>
     /// Represents one failed export operation.
     /// </summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class ExportError {
         /// <summary>
         /// Initializes a new instance of the <see cref="ExportError"/> class.
@@ -21,15 +28,28 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets the artifact that failed to export.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public ExportItem Item {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the exception describing the export failure.
         /// </summary>
         public Exception Exception {
-            get;
+            get; private set;
+        }
+
+        /// <summary>Gets diagnostics for the worker boundary without serializing exception types.</summary>
+        [System.Runtime.Serialization.DataMember]
+        public string Diagnostic {
+            get {
+                return this.Exception == null ? string.Empty : this.Exception.ToString();
+            }
+
+            private set {
+                this.Exception = new InvalidOperationException(value);
+            }
         }
 
         /// <summary>

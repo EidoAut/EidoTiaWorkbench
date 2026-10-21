@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ScanState.cs
+// Identifies the lifecycle state of the project inventory scan.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Application {
     /// <summary>
     /// Identifies the lifecycle state of the project inventory scan.

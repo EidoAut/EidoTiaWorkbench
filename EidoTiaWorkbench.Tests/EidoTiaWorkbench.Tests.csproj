@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <OpennessV21Path Condition="'$(OpennessV21Path)' == ''">C:\Program Files\Siemens\Automation\Portal V21\PublicAPI\V21\net48</OpennessV21Path>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -35,7 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Siemens.Engineering.Base, Version=21.0.0.0, Culture=neutral, PublicKeyToken=29bfe5fdf4ba5d3b, processorArchitecture=MSIL">
-      <HintPath>C:\Program Files\Siemens\Automation\Portal V21\PublicAPI\V21\net48\Siemens.Engineering.Base.dll</HintPath>
+      <HintPath>$(OpennessV21Path)\Siemens.Engineering.Base.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -48,7 +49,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="Program.cs" /><Compile Include="ModernizationTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="..\stylecop.json" Link="stylecop.json" />
@@ -60,4 +61,5 @@
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+<ItemGroup><ProjectReference Include="..\EidoTiaWorkbench.Openness.V21\EidoTiaWorkbench.Openness.V21.csproj"><Project>{0B474B99-C79D-45A9-8250-075B0FE0AD21}</Project><Name>EidoTiaWorkbench.Openness.V21</Name></ProjectReference></ItemGroup>
 </Project>

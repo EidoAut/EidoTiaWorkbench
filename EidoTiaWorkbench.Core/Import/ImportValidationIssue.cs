@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportValidationIssue.cs
+// Describes one human-readable problem found before calling Siemens Openness import.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using EidoTiaWorkbench.Core.Inventory;
 
 namespace EidoTiaWorkbench.Core.Import {

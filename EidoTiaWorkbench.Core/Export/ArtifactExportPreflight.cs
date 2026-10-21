@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ArtifactExportPreflight.cs
+// Describes the artifact-level export capability decision made before Openness is invoked.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using EidoTiaWorkbench.Core.Model;
 

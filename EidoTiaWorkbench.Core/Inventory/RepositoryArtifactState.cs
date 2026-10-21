@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// RepositoryArtifactState.cs
+// Identifies the comparison state of an XML artifact found in the repository.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Inventory {
     /// <summary>
     /// Identifies the comparison state of an XML artifact found in the repository.

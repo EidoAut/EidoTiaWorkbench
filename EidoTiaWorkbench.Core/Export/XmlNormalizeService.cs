@@ -1,5 +1,15 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// XmlNormalizeService.cs
+// Normalizes XML output to be stable and workspace-friendly: - UTF-8 (no BOM) - LF line endings -
+// consistent indentation - stable attribute ordering (by namespace + local name) - optional scrubbing of
+// volatile fields (regex-based) Notes: - Elements are NOT reordered because element order can be
+// semantically meaningful for TIA exports. - Scrubbing is intentionally opt-in/configurable to avoid
+// accidentally removing meaningful data.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.IO;

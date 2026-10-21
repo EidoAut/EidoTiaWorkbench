@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ArtifactFilterBar.cs
+// Provides scope, kind, device, search, and changed-only filters for artifact lists.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Drawing;
 using System.Linq;
@@ -23,20 +29,26 @@ namespace EidoTiaWorkbench.Controls {
         /// </summary>
         public ArtifactFilterBar() {
             this.Dock = DockStyle.Top;
-            this.AutoSize = true;
+            this.AutoSize = false;
+            this.Height = 132;
             this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             this.BackColor = ThemeColors.SurfaceSecondary;
 
-            var layout = new FlowLayoutPanel {
-                Dock = DockStyle.Top,
-                AutoSize = true,
+            var layout = new TableLayoutPanel {
+                Dock = DockStyle.Fill,
+                AutoSize = false,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = true,
+                ColumnCount = 3,
+                RowCount = 2,
                 BackColor = ThemeColors.SurfaceSecondary,
                 Padding = new Padding(8, 8, 8, 8),
             };
 
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
             this._scope = CreateCombo(90);
             this._scope.Items.AddRange(new object[] { "All", "PLC", "HMI" });
             this._scope.SelectedIndex = 0;
@@ -51,7 +63,7 @@ namespace EidoTiaWorkbench.Controls {
 
             this._device = CreateTextBox(150, "Device");
             this._search = CreateTextBox(220, "Search text");
-            this._changedOnly = new CheckBox {
+            this._changedOnly = new ThemedCheckBox {
                 Text = "Changed only",
                 AutoSize = true,
                 Margin = new Padding(0, 5, 0, 0),
@@ -63,11 +75,13 @@ namespace EidoTiaWorkbench.Controls {
             this._search.TextChanged += this.RaiseChanged;
             this._changedOnly.CheckedChanged += this.RaiseChanged;
 
-            layout.Controls.Add(CreateField("Scope", this._scope));
-            layout.Controls.Add(CreateField("Kind", this._kind));
-            layout.Controls.Add(CreateField("Device", this._device));
-            layout.Controls.Add(CreateField("Search", this._search));
-            layout.Controls.Add(CreateField("State", this._changedOnly));
+            layout.Controls.Add(CreateField("Scope", this._scope), 0, 0);
+            layout.Controls.Add(CreateField("Kind", this._kind), 1, 0);
+            layout.Controls.Add(CreateField("Device", this._device), 2, 0);
+            var search = CreateField("Search artifacts", this._search);
+            layout.Controls.Add(search, 0, 1);
+            layout.SetColumnSpan(search, 2);
+            layout.Controls.Add(CreateField("State", this._changedOnly), 2, 1);
             this.Controls.Add(layout);
             AppTheme.ApplyThemeTree(this);
         }
@@ -160,7 +174,8 @@ namespace EidoTiaWorkbench.Controls {
         /// <returns>The configured field container.</returns>
         private static Control CreateField(string labelText, Control input) {
             var field = new TableLayoutPanel {
-                AutoSize = true,
+                Dock = DockStyle.Fill,
+                AutoSize = false,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = ThemeColors.SurfaceSecondary,
                 ColumnCount = 1,
@@ -170,14 +185,20 @@ namespace EidoTiaWorkbench.Controls {
             };
             field.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             field.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            field.Controls.Add(new Label {
-                AutoSize = true,
-                Text = labelText,
-                Font = ThemeFonts.Secondary,
-                ForeColor = ThemeColors.TextSecondary,
-                Margin = new Padding(0, 0, 0, 2),
-            }, 0, 0);
-            input.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+            field.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            field.Controls.Add(
+                new Label {
+                    AutoSize = true,
+                    Text = labelText,
+                    Font = ThemeFonts.Secondary,
+                    ForeColor = ThemeColors.TextSecondary,
+                    Margin = new Padding(0, 0, 0, 2),
+                },
+                0,
+                0);
+            input.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
+            input.MinimumSize = new Size(0, input.MinimumSize.Height);
+            input.Width = 80;
             field.Controls.Add(input, 0, 1);
             return field;
         }

@@ -1,8 +1,13 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
-using Siemens.Engineering;
-
+// =========================================================================
+// OpennessExportOptionPolicy.cs
+// Selects Siemens Openness export options that are safe to import back into TIA Portal.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using EidoTiaWorkbench.Core.Model;
+using Siemens.Engineering;
 
 namespace EidoTiaWorkbench.Core.Utilities {
     /// <summary>

@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// AssemblyInfo.cs
+// Declares assembly identity and interoperability metadata.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -31,3 +37,5 @@ using System.Runtime.InteropServices;
 //
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("EidoTiaWorkbench.Openness.V21")]

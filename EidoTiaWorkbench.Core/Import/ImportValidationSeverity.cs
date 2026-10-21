@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportValidationSeverity.cs
+// Classifies the severity of one import preflight validation issue.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Import {
     /// <summary>
     /// Classifies the severity of one import preflight validation issue.

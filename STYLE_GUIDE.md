@@ -2,9 +2,11 @@
 
 Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+The authoritative corporate standard is [EIDO C# Programming Style Guide v1.0](docs/EIDO_CSharp_Programming_Style_Guide_v1.0.md).
+
 ## Scope
 
-This project uses the corporate `stylecop.json` located at the solution root. The file is included as an `AdditionalFiles` item in `EidoTiaWorkbench.Core`, `EidoTiaWorkbench.WinForms`, and `EidoTiaWorkbench.Tests`, so StyleCop.Analyzers reads the same settings in Visual Studio and MSBuild builds.
+This project uses the corporate `stylecop.json` located at the solution root. The file is included as an `AdditionalFiles` item in all seven projects, including the worker, V21 adapter, offline tests and visual validation tool. StyleCop.Analyzers reads the same settings in Visual Studio and MSBuild builds.
 
 ## StyleCop Integration
 
@@ -19,7 +21,7 @@ The projects remain classic .NET Framework 4.8 MSBuild projects. They were not m
 - UTF-8 BOM, CRLF, final newline.
 - Four spaces, no tab indentation.
 - `System` usings first, usings outside namespaces.
-- Allman braces.
+- K&R braces: opening braces on the same line as declarations and control statements, separated by one space.
 - One statement per line.
 - Standard C# spacing around commas, dots and binary operators.
 
@@ -37,9 +39,9 @@ The rules are compatible with C# 7.3.
 
 XML documentation files are enabled for Debug and Release builds. Compiler warning `CS1591` is active; do not add a project-level `NoWarn` entry for documentation warnings.
 
-StyleCop documentation warnings remain enabled with `documentExposedElements`, `documentInternalElements`, and `documentPrivateElements` set to `true`. Manual source files should include clear `summary`, `param`, `returns` and relevant `exception` tags for public, internal, and private members.
+StyleCop documentation warnings remain enabled with `documentExposedElements` and `documentInternalElements` set to `true`; private helper documentation is contextual. Manual source files should include clear `summary`, `param`, `returns` and relevant `exception` tags for public/internal contracts and non-obvious private helpers.
 
-Manual C# files use the single-line copyright header required by the current `xmlHeader=false` configuration:
+Manual C# files preserve the copyright line and add the 76-character corporate banner, filename, responsibility and exact `Developed by EIDO Automation` signature. The copyright line remains compatible with the current `xmlHeader=false` configuration:
 
 ```csharp
 // Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
@@ -57,15 +59,22 @@ Do not manually reformat or rewrite generated WinForms and resource files to sat
 
 ## Suppressions
 
-The following StyleCop rule is disabled in `.editorconfig` with project-level justification:
+The following StyleCop rules are disabled in `.editorconfig` with project-level justification:
 
 - `SA1309`: disabled because the project convention explicitly requires private fields to start with `_`.
+- `SA1500`: disabled because EIDO requires opening braces on the same line as declarations and control statements.
 
 No broad `NoWarn` is used for StyleCop or XML documentation diagnostics.
 
 ## Local Verification
 
-Restore packages and build with analyzers:
+Run the repeatable full style check (headers, encoding, formatting and Debug/Release builds with warnings treated as errors):
+
+```powershell
+.\tools\Test-EidoStyle.ps1
+```
+
+The check excludes generated Designer files. It does not replace review of ownership, error handling or domain behavior. To build and run regressions separately:
 
 ```powershell
 $msbuild = 'C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\amd64\MSBuild.exe'

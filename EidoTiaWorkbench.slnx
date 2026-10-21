@@ -3,12 +3,16 @@
     <Platform Name="x64" />
   </Configurations>
   <Project Path="EidoTiaWorkbench.Core/EidoTiaWorkbench.Core.csproj" Id="e11e8c0e-6674-4cc8-96e4-3a46fc5a5e5d">
-    <Platform Solution="*|x64" Project="x64" />
+    <Platform Project="x64" />
   </Project>
   <Project Path="EidoTiaWorkbench/EidoTiaWorkbench.WinForms.csproj" Id="27590726-d1c7-44c2-9488-ec70c2f743c9">
-    <Platform Solution="*|x64" Project="x64" />
+    <Platform Project="x64" />
   </Project>
   <Project Path="EidoTiaWorkbench.Tests/EidoTiaWorkbench.Tests.csproj" Id="8a27fceb-62fd-4be6-bd0a-af14df42464a">
-    <Platform Solution="*|x64" Project="x64" />
+    <Platform Project="x64" />
   </Project>
+  <Project Path="EidoTiaWorkbench.Openness.V21/EidoTiaWorkbench.Openness.V21.csproj" Id="0b474b99-c79d-45a9-8250-075b0fe0ad21" />
+  <Project Path="EidoTiaWorkbench.Worker/EidoTiaWorkbench.Worker.csproj" Id="88a32e40-5d87-45a9-8250-075b0fe0ad21" />
+  <Project Path="EidoTiaWorkbench.OfflineTests/EidoTiaWorkbench.OfflineTests.csproj" Id="60a32e40-5d87-45a9-8250-075b0fe0ad21" />
+  <Project Path="tools/VisualValidation.csproj" Id="dc8b9533-d78d-4f79-8fd1-5225137d5662" />
 </Solution>

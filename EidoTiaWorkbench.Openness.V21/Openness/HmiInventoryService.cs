@@ -1,18 +1,22 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// HmiInventoryService.cs
+// Discovers classic WinCC HMI screen artifacts from the open TIA Portal project.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-
+using EidoTiaWorkbench.Core.Model;
 using Siemens.Engineering;
 using Siemens.Engineering.Hmi;
 using Siemens.Engineering.Hmi.Screen;
 using Siemens.Engineering.HW;
 using Siemens.Engineering.HW.Features;
-
-using EidoTiaWorkbench.Core.Model;
 
 namespace EidoTiaWorkbench.Core.Openness {
     /// <summary>
@@ -382,7 +386,8 @@ namespace EidoTiaWorkbench.Core.Openness {
 
                 var value = method.Invoke(engineeringObject, new object[] { attributeName });
                 return value == null ? null : Convert.ToString(value);
-            } catch {
+            }
+            catch {
                 // Attribute availability varies by device family and installed Openness components.
                 return null;
             }

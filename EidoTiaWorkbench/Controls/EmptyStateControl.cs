@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// EmptyStateControl.cs
+// Shows an empty-state title and message when a view has no content.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Theme;

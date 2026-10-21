@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ProductInfo.cs
+// Provides product identity used by the desktop shell and generated artifacts.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Application {
     /// <summary>
     /// Provides product identity used by the desktop shell and generated artifacts.
@@ -23,6 +29,6 @@ namespace EidoTiaWorkbench.Application {
         /// <summary>
         /// Gets the short technical strapline shown in the application chrome.
         /// </summary>
-        public const string Strapline = "ROOT / EIDO / TIA_PORTAL_V21";
+        public const string Strapline = "EIDO / ENGINEERING WORKSPACE";
     }
 }

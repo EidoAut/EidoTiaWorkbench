@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// OperationOverlay.cs
+// Displays the active operation name, current artifact, and progress bar above the current view.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -23,7 +29,7 @@ namespace EidoTiaWorkbench.Controls {
             this.Dock = DockStyle.Top;
 
             // The overlay has fixed chrome height so progress feedback does not resize the active view.
-            this.Height = 68;
+            this.Height = 88;
             this.BackColor = ThemeColors.OperationSurface;
             this.Padding = new Padding(14, 8, 14, 8);
             this.Visible = false;
@@ -44,14 +50,16 @@ namespace EidoTiaWorkbench.Controls {
                 Font = ThemeFonts.SectionTitle,
                 ForeColor = ThemeColors.TextPrimary,
                 AutoEllipsis = true,
+                AutoSize = true,
             };
             this._artifact = new Label {
                 Dock = DockStyle.Fill,
                 Font = ThemeFonts.Secondary,
                 ForeColor = ThemeColors.TextSecondary,
                 AutoEllipsis = true,
+                AutoSize = true,
             };
-            this._progress = new ProgressBar {
+            this._progress = new ThemedProgressBar {
                 Dock = DockStyle.Top,
 
                 // A slim progress indicator is deliberate chrome rather than content layout.
@@ -87,7 +95,7 @@ namespace EidoTiaWorkbench.Controls {
             operation = operation ?? CurrentOperationInfo.Idle;
             this.Visible = operation.IsBusy;
             this._title.Text = string.IsNullOrWhiteSpace(operation.StatusText) ? operation.Name : operation.StatusText;
-            this._artifact.Text = operation.CurrentArtifact;
+            this._artifact.Text = string.IsNullOrWhiteSpace(operation.CurrentArtifact) ? "Waiting for the engineering operation to complete. You can review Activity for details." : operation.CurrentArtifact;
             this._progress.Style = operation.IsIndeterminate ? ProgressBarStyle.Marquee : ProgressBarStyle.Continuous;
             this._progress.Maximum = System.Math.Max(1, operation.Maximum);
             if (!operation.IsIndeterminate) {

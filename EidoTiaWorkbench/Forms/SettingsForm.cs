@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// SettingsForm.cs
+// Hosts the settings view in a modal form.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Application;
@@ -28,6 +34,7 @@ namespace EidoTiaWorkbench.Forms {
             var view = new SettingsView { Dock = DockStyle.Fill };
             view.Bind(state, logFilePath);
             this.Controls.Add(view);
+            AppTheme.ApplyThemeTree(this);
         }
     }
 }

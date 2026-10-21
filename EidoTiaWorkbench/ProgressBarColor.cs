@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ProgressBarColor.cs
+// Provides helper methods to change the visual state color of a Windows Forms control using the Win32 API.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -68,7 +74,8 @@ namespace EidoTiaWorkbench {
                     PbmSetState,
                     (IntPtr)state,
                     IntPtr.Zero);
-            } catch {
+            }
+            catch {
                 // Silently ignore failures to avoid UI crashes.
                 // Typically occurs if handle is not yet created.
             }

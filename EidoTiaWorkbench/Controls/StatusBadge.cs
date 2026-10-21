@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// StatusBadge.cs
+// Displays compact status text with a colored background.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Theme;
@@ -13,6 +19,7 @@ namespace EidoTiaWorkbench.Controls {
         /// Initializes a new instance of the <see cref="StatusBadge"/> class.
         /// </summary>
         public StatusBadge() {
+            this.SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
             this.AutoSize = true;
 
             // Badges keep a small touch target while still auto-sizing for longer translated states.
@@ -31,8 +38,29 @@ namespace EidoTiaWorkbench.Controls {
         /// <param name="color">Background color representing the status.</param>
         public void SetStatus(string text, Color color) {
             this.Text = text;
-            this.BackColor = color;
-            this.ForeColor = GetReadableTextColor(color);
+            this.BackColor = RoundedDrawing.Blend(color, ThemeColors.Surface, 0.13F);
+            this.ForeColor = color;
+            this.Invalidate();
+        }
+
+        /// <inheritdoc />
+        protected override void OnPaint(PaintEventArgs e) {
+            e.Graphics.Clear(this.Parent?.BackColor ?? ThemeColors.Surface);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using (var path = RoundedDrawing.Path(new RectangleF(0.5F, 0.5F, this.Width - 1, this.Height - 1), 5))
+            using (var fill = new SolidBrush(RoundedDrawing.Blend(this.ForeColor, ThemeColors.Surface, 0.13F)))
+            using (var border = new Pen(RoundedDrawing.Blend(this.ForeColor, ThemeColors.Surface, 0.40F))) {
+                e.Graphics.FillPath(fill, path);
+                e.Graphics.DrawPath(border, path);
+            }
+
+            TextRenderer.DrawText(
+                e.Graphics,
+                this.Text,
+                this.Font,
+                this.ClientRectangle,
+                this.ForeColor,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
         }
 
         /// <summary>

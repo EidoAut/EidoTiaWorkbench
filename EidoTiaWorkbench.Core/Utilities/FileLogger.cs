@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// FileLogger.cs
+// Writes timestamped log entries to a single UTF-8 file.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.IO;
 using System.Text;

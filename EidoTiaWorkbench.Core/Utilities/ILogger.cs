@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ILogger.cs
+// Defines the minimal logging contract used by core export, import, and inventory services.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 
 namespace EidoTiaWorkbench.Core.Utilities {

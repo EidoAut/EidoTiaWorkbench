@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// NavigationEventArgs.cs
+// Provides event data for a sidebar navigation request.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 
 namespace EidoTiaWorkbench.Controls {

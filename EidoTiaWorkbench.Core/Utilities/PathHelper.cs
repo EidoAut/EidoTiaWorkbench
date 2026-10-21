@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// PathHelper.cs
+// Helper methods for building deterministic and filesystem-safe paths.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.IO;
 using System.Linq;

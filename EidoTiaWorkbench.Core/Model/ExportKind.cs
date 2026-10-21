@@ -1,5 +1,12 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportKind.cs
+// Identifies the exportable object type. This enum is used across scanning, export, import, and path
+// generation to determine how each artifact should be handled.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Model {
     /// <summary>
     /// Identifies the exportable object type.

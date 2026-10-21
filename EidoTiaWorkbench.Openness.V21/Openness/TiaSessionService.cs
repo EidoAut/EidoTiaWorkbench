@@ -1,14 +1,20 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// TiaSessionService.cs
+// Manages the lifecycle of a TIA Portal session and project using the Openness API.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using EidoTiaWorkbench.Core.Utilities;
 using Siemens.Engineering;
 using Siemens.Engineering.HW;
 using Siemens.Engineering.HW.Features;
-using EidoTiaWorkbench.Core.Utilities;
 
 namespace EidoTiaWorkbench.Core.Openness {
     /// <summary>
@@ -111,8 +117,8 @@ namespace EidoTiaWorkbench.Core.Openness {
                 for (var i = 0; i < processes.Count; i++) {
                     var process = processes[i];
                     result.Add(new TiaPortalInstanceInfo(
-                        i,
-                        GetObjectInt(process, "Id") ?? GetObjectInt(process, "ProcessId"),
+                        process.Id,
+                        process.Id,
                         GetObjectString(process, "Name") ?? "TIA Portal instance " + (i + 1),
                         GetObjectString(process, "ProjectPath") ?? GetObjectString(process, "ProjectFile")));
                 }
@@ -170,7 +176,8 @@ namespace EidoTiaWorkbench.Core.Openness {
 
                         return true;
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     if (ex is InvalidOperationException &&
                         ex.Message.IndexOf("Multiple TIA Portal instances", StringComparison.OrdinalIgnoreCase) >= 0) {
                         throw;
@@ -211,11 +218,20 @@ namespace EidoTiaWorkbench.Core.Openness {
                 }
 
                 var processes = TiaPortal.GetProcesses();
-                if (instanceIndex < 0 || instanceIndex >= processes.Count) {
+                var selected = processes.FirstOrDefault(process => process.Id == instanceIndex);
+                if (selected == null) {
                     throw new ArgumentOutOfRangeException(nameof(instanceIndex), "Selected TIA Portal instance is no longer available.");
                 }
 
-                this._tiaPortal = processes[instanceIndex].Attach();
+                using (var operatingSystemProcess = System.Diagnostics.Process.GetProcessById(selected.Id)) {
+                    var executable = operatingSystemProcess.MainModule.FileName;
+                    var version = System.Diagnostics.FileVersionInfo.GetVersionInfo(executable);
+                    if (version.FileMajorPart != 2100) {
+                        throw new NotSupportedException("Selected process is not TIA Portal V21: " + executable);
+                    }
+                }
+
+                this._tiaPortal = selected.Attach();
                 this._project = this._tiaPortal.Projects.FirstOrDefault();
                 this._ownsPortal = false;
 
@@ -385,7 +401,8 @@ namespace EidoTiaWorkbench.Core.Openness {
                     this.DisconnectInternal(closeOwnedPortal: true);
                     return true;
                 }).GetAwaiter().GetResult();
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 this._log.Error("Failed to dispose TIA session cleanly.", ex);
             }
         }
@@ -439,7 +456,8 @@ namespace EidoTiaWorkbench.Core.Openness {
 
             try {
                 GC.KeepAlive(this._tiaPortal.Projects.Count);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 this._tiaPortal = null;
                 this._project = null;
                 return TiaSessionHealth.Unhealthy(
@@ -460,7 +478,8 @@ namespace EidoTiaWorkbench.Core.Openness {
                 var projectPath = ResolveProjectPath(this._project);
                 GC.KeepAlive(projectName);
                 return TiaSessionHealth.Healthy(projectName, projectPath);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 this._project = null;
                 return TiaSessionHealth.Unhealthy(
                     TiaSessionHealthStatus.ProjectReferenceInvalid,
@@ -500,7 +519,8 @@ namespace EidoTiaWorkbench.Core.Openness {
             if (this._tiaPortal != null) {
                 try {
                     GC.KeepAlive(this._tiaPortal.Projects.Count);
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     originalFailure = ex;
                     this._tiaPortal = null;
                     this._project = null;
@@ -520,7 +540,8 @@ namespace EidoTiaWorkbench.Core.Openness {
                     this._tiaPortal = processes[0].Attach();
                     this._ownsPortal = false;
                     this._log.Warn("Recovered by reattaching to the single running TIA Portal instance.");
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     this._tiaPortal = null;
                     this._project = null;
                     return TiaSessionHealth.Unhealthy(
@@ -545,54 +566,14 @@ namespace EidoTiaWorkbench.Core.Openness {
                 }
 
                 return health;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 this._project = null;
                 return TiaSessionHealth.Unhealthy(
                     TiaSessionHealthStatus.ProjectReferenceInvalid,
                     "Controlled recovery could not adopt a valid open project.",
                     ex);
             }
-        }
-
-        /// <summary>
-        /// Resolves the recovered project while preserving the identity captured before the operation started.
-        /// </summary>
-        /// <param name="expectedProjectName">Expected project name, when available.</param>
-        /// <param name="expectedProjectPath">Expected project path, when available.</param>
-        /// <returns>The matching project, or <see langword="null"/> when no unambiguous match exists.</returns>
-        private Project ResolveRecoveryProject(string expectedProjectName, string expectedProjectPath) {
-            if (this._tiaPortal == null) {
-                return null;
-            }
-
-            var projects = this._tiaPortal.Projects.ToList();
-            if (projects.Count == 0) {
-                return null;
-            }
-
-            if (!string.IsNullOrWhiteSpace(expectedProjectPath)) {
-                var byPath = projects
-                    .Where(p => string.Equals(ResolveProjectPath(p), expectedProjectPath, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                if (byPath.Count == 1) {
-                    return byPath[0];
-                }
-
-                return null;
-            }
-
-            if (!string.IsNullOrWhiteSpace(expectedProjectName)) {
-                var byName = projects
-                    .Where(p => string.Equals(p.Name, expectedProjectName, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                if (byName.Count == 1) {
-                    return byName[0];
-                }
-
-                return null;
-            }
-
-            return projects.Count == 1 ? projects[0] : null;
         }
 
         /// <summary>
@@ -635,7 +616,8 @@ namespace EidoTiaWorkbench.Core.Openness {
 
                     if (typeName.IndexOf("PlcSoftware", StringComparison.OrdinalIgnoreCase) >= 0) {
                         info.PlcTargets.Add(targetName);
-                    } else if (typeName.IndexOf("Hmi", StringComparison.OrdinalIgnoreCase) >= 0) {
+                    }
+                    else if (typeName.IndexOf("Hmi", StringComparison.OrdinalIgnoreCase) >= 0) {
                         info.HmiTargets.Add(targetName);
                     }
                 }
@@ -700,6 +682,47 @@ namespace EidoTiaWorkbench.Core.Openness {
         }
 
         /// <summary>
+        /// Resolves the recovered project while preserving the identity captured before the operation started.
+        /// </summary>
+        /// <param name="expectedProjectName">Expected project name, when available.</param>
+        /// <param name="expectedProjectPath">Expected project path, when available.</param>
+        /// <returns>The matching project, or <see langword="null"/> when no unambiguous match exists.</returns>
+        private Project ResolveRecoveryProject(string expectedProjectName, string expectedProjectPath) {
+            if (this._tiaPortal == null) {
+                return null;
+            }
+
+            var projects = this._tiaPortal.Projects.ToList();
+            if (projects.Count == 0) {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(expectedProjectPath)) {
+                var byPath = projects
+                    .Where(p => string.Equals(ResolveProjectPath(p), expectedProjectPath, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (byPath.Count == 1) {
+                    return byPath[0];
+                }
+
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(expectedProjectName)) {
+                var byName = projects
+                    .Where(p => string.Equals(p.Name, expectedProjectName, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (byName.Count == 1) {
+                    return byName[0];
+                }
+
+                return null;
+            }
+
+            return projects.Count == 1 ? projects[0] : null;
+        }
+
+        /// <summary>
         /// Closes the project without thread marshaling.
         /// Must be called from STA context.
         /// </summary>
@@ -707,7 +730,8 @@ namespace EidoTiaWorkbench.Core.Openness {
             if (this._project != null) {
                 try {
                     this._project.Close();
-                } finally {
+                }
+                finally {
                     this._project = null;
                 }
             }
@@ -729,7 +753,8 @@ namespace EidoTiaWorkbench.Core.Openness {
                 this.CloseProjectInternal();
                 this._log.Info("Disposing owned TIA Portal instance.");
                 this._tiaPortal.Dispose();
-            } else {
+            }
+            else {
                 this._log.Info(this._ownsPortal
                     ? "Kept owned TIA Portal instance running."
                     : "Detached from external TIA Portal instance.");
@@ -764,7 +789,8 @@ namespace EidoTiaWorkbench.Core.Openness {
                 info.ProjectName = this._project.Name;
                 info.ProjectPath = ResolveProjectPath(this._project);
                 CollectTargets(this._project, info);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 this._project = null;
                 info.IsProjectOpen = false;
                 info.ProjectName = null;

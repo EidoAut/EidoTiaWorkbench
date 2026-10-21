@@ -1,5 +1,15 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ReflectionCache.cs
+// Lightweight reflection cache used to speed up repeated property lookups. Why this exists: - TIA Openness
+// APIs often require reflection to remain version-tolerant. - Reflection calls (Type.GetProperty) are
+// relatively expensive. - Many services repeatedly query the same properties (e.g. "Name", "Groups",
+// "Types"). This cache: - Stores PropertyInfo instances keyed by type + property name. - Uses a thread-safe
+// ConcurrentDictionary. - Avoids repeated reflection cost across export/import scans.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Concurrent;
 using System.Reflection;

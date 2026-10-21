@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExceptionDiagnosticFormatter.cs
+// Builds exhaustive exception diagnostics without collapsing wrapper exceptions.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -67,7 +73,8 @@ namespace EidoTiaWorkbench.Core.Utilities {
 
             if (exception is TargetInvocationException && exception.InnerException != null) {
                 builder.AppendLine("TargetInvocationException.InnerException:");
-            } else if (exception.InnerException != null) {
+            }
+            else if (exception.InnerException != null) {
                 builder.AppendLine("InnerException:");
             }
 
@@ -106,7 +113,8 @@ namespace EidoTiaWorkbench.Core.Utilities {
                 object value;
                 try {
                     value = property.GetValue(exception, null);
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     value = "<getter failed: " + ex.GetType().Name + ": " + ex.Message + ">";
                 }
 

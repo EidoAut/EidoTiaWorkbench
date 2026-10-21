@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportDependencyIssue.cs
+// Describes a dependency problem discovered while planning import order.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using EidoTiaWorkbench.Core.Inventory;
 
 namespace EidoTiaWorkbench.Core.Import {
