@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ConnectionStatusCard.cs
+// Displays TIA Portal connection state in an information card.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using EidoTiaWorkbench.Theme;
 
 namespace EidoTiaWorkbench.Controls {

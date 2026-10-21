@@ -1,5 +1,12 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportProfile.cs
+// Predefined export sets to simplify UI and CLI usage. Profiles allow users to quickly select common export
+// scopes without manually choosing artifact types.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Model {
     /// <summary>
     /// Predefined export sets to simplify UI and CLI usage.

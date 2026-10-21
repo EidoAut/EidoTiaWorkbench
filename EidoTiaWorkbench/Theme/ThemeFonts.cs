@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ThemeFonts.cs
+// Creates shared fonts used by themed WinForms controls.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 
 namespace EidoTiaWorkbench.Theme {
@@ -7,12 +13,18 @@ namespace EidoTiaWorkbench.Theme {
     /// Creates shared fonts used by themed WinForms controls.
     /// </summary>
     public static class ThemeFonts {
+        private static readonly Font _pageTitleFont = new Font("Segoe UI", 22F, FontStyle.Bold, GraphicsUnit.Point);
+        private static readonly Font _sectionTitleFont = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point);
+        private static readonly Font _bodyFont = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point);
+        private static readonly Font _secondaryFont = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point);
+        private static readonly Font _badgeFont = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
+
         /// <summary>
         /// Gets a large bold font for page titles.
         /// </summary>
         public static Font PageTitle {
             get {
-                return new Font("Segoe UI", 19F, FontStyle.Bold, GraphicsUnit.Point);
+                return _pageTitleFont;
             }
         }
 
@@ -21,7 +33,7 @@ namespace EidoTiaWorkbench.Theme {
         /// </summary>
         public static Font SectionTitle {
             get {
-                return new Font("Segoe UI", 11.5F, FontStyle.Bold, GraphicsUnit.Point);
+                return _sectionTitleFont;
             }
         }
 
@@ -30,7 +42,7 @@ namespace EidoTiaWorkbench.Theme {
         /// </summary>
         public static Font Body {
             get {
-                return new Font("Segoe UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
+                return _bodyFont;
             }
         }
 
@@ -39,7 +51,7 @@ namespace EidoTiaWorkbench.Theme {
         /// </summary>
         public static Font Secondary {
             get {
-                return new Font("Segoe UI", 8.75F, FontStyle.Regular, GraphicsUnit.Point);
+                return _secondaryFont;
             }
         }
 
@@ -48,7 +60,7 @@ namespace EidoTiaWorkbench.Theme {
         /// </summary>
         public static Font Badge {
             get {
-                return new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point);
+                return _badgeFont;
             }
         }
     }

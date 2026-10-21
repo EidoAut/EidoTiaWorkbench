@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// MainShellForm.cs
+// Main desktop shell that hosts navigation, views, status, activity drawer, and global operation chrome.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -33,18 +39,22 @@ namespace EidoTiaWorkbench.Forms {
         private readonly ToastNotification _toast;
         private readonly Dictionary<string, UserControl> _views = new Dictionary<string, UserControl>(StringComparer.OrdinalIgnoreCase);
         private readonly List<object> _presenters = new List<object>();
+        private readonly Dictionary<Control, bool> _busyControls = new Dictionary<Control, bool>();
+        private readonly bool _discoverOnLoad;
         private string _currentViewKey;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainShellForm"/> class.
         /// </summary>
-        public MainShellForm() {
+        /// <param name="discoverOnLoad">Whether to enumerate TIA instances on startup; false keeps visual probes offline.</param>
+        public MainShellForm(bool discoverOnLoad = true) {
+            this._discoverOnLoad = discoverOnLoad;
             AppTheme.ApplyTo(this);
-            this.Text = ProductInfo.Name + " (TIA Portal V21)";
+            this.Text = ProductInfo.Name;
             this.ClientSize = new Size(1280, 800);
 
             // The shell minimum protects the fixed sidebar plus usable central content width.
-            this.MinimumSize = new Size(1120, 700);
+            this.MinimumSize = new Size(800, 480);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.Icon = Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
 
@@ -57,14 +67,17 @@ namespace EidoTiaWorkbench.Forms {
                 ColumnCount = 1,
                 RowCount = 3,
             };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
             // Fixed shell chrome rows reserve enough logical height for DPI-scaled header/status content.
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 72F));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 34F));
 
             this._header = new ApplicationHeader();
             this._header.ActivityToggleRequested += (s, e) => this.ToggleActivityDrawer();
+            this._header.ThemeToggleRequested += (s, e) => this.ApplyThemePreference(
+                ThemeColors.UseDarkPalette ? ThemePreference.Light : ThemePreference.Dark);
 
             var body = new TableLayoutPanel {
                 Dock = DockStyle.Fill,
@@ -73,14 +86,16 @@ namespace EidoTiaWorkbench.Forms {
             };
 
             // The sidebar keeps a stable navigation target width; the form minimum protects content width.
-            body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220F));
+            body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 232F));
             body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            body.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
             this._sidebar = new SidebarNavigation();
             this._sidebar.AddMainItem("Dashboard", "Dashboard", "dashboard");
             this._sidebar.AddMainItem("Project", "Project", "project");
             this._sidebar.AddMainItem("Export", "Export", "export");
             this._sidebar.AddMainItem("Import", "Import", "import");
+            this._sidebar.AddMainItem("Validation", "Validation", "success");
             this._sidebar.AddMainItem("Activity", "Activity", "activity");
             this._sidebar.AddMainItem("Settings", "Settings", "settings");
             this._sidebar.AddBottomItem("About", "About", "success");
@@ -101,6 +116,7 @@ namespace EidoTiaWorkbench.Forms {
             };
             viewSurface.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             viewSurface.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            viewSurface.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
             this._overlay = new OperationOverlay();
             this._overlay.CancelRequested += (s, e) => this._controller.CancelCurrentOperation();
@@ -125,6 +141,7 @@ namespace EidoTiaWorkbench.Forms {
             this._statusStrip = new StatusStrip {
                 Dock = DockStyle.Fill,
                 SizingGrip = false,
+                Font = ThemeFonts.Secondary,
                 BackColor = ThemeColors.Surface,
             };
             this._statusLabel = new ToolStripStatusLabel("Ready") { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
@@ -141,6 +158,9 @@ namespace EidoTiaWorkbench.Forms {
             this._statusStrip.Items.Add(this._statusLabel);
             this._statusStrip.Items.Add(this._repositoryLabel);
             this._statusStrip.Items.Add(this._progress);
+            var diagnostics = new ToolStripStatusLabel("Activity") { IsLink = true, LinkColor = ThemeColors.Primary, ActiveLinkColor = ThemeColors.PrimaryHover, Margin = new Padding(16, 0, 8, 0) };
+            diagnostics.Click += (sender, e) => this.ToggleActivityDrawer();
+            this._statusStrip.Items.Add(diagnostics);
 
             root.Controls.Add(this._header, 0, 0);
             root.Controls.Add(body, 0, 1);
@@ -150,6 +170,7 @@ namespace EidoTiaWorkbench.Forms {
             this.CreateViews();
             this.WireState();
             this.Navigate("Dashboard");
+            this.UpdateShellFromState();
             AppTheme.ApplyThemeTree(this);
         }
 
@@ -165,15 +186,26 @@ namespace EidoTiaWorkbench.Forms {
             }
         }
 
+        /// <inheritdoc />
+        protected override void OnDpiChanged(DpiChangedEventArgs e) {
+            base.OnDpiChanged(e);
+            AppTheme.ApplyThemeTree(this);
+        }
+
         /// <summary>
         /// Restores persisted window placement and starts initial portal discovery.
         /// </summary>
         /// <param name="e">Event data for the load event.</param>
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
-            this.RestoreWindowPlacement();
+            if (this._discoverOnLoad) {
+                this.RestoreWindowPlacement();
+            }
+
             this._activityDrawer.Bind(this._state.Activity);
-            this.FireStartupRefresh();
+            if (this._discoverOnLoad) {
+                this.FireStartupRefresh();
+            }
         }
 
         /// <summary>
@@ -181,7 +213,15 @@ namespace EidoTiaWorkbench.Forms {
         /// </summary>
         /// <param name="e">Event data for the form closing event.</param>
         protected override void OnFormClosing(FormClosingEventArgs e) {
-            this.SaveWindowPlacement();
+            if (this._state.CurrentOperation.IsBusy) {
+                this._controller.CancelCurrentOperation();
+                e.Cancel = true;
+                this._statusLabel.Text = "Cancellation requested. Wait for the current Siemens call to finish before closing.";
+            }
+            else {
+                this.SaveWindowPlacement();
+            }
+
             base.OnFormClosing(e);
         }
 
@@ -228,6 +268,20 @@ namespace EidoTiaWorkbench.Forms {
             return new Rectangle(x, y, width, height);
         }
 
+        /// <summary>Locates the hosted page heading so its context can move into the shell.</summary>
+        /// <param name="root">Page subtree to inspect.</param>
+        /// <returns>The first page header, or null for pages without a heading.</returns>
+        private static PageHeader FindPageHeader(Control root) {
+            foreach (Control child in root.Controls) {
+                var header = child as PageHeader ?? FindPageHeader(child);
+                if (header != null) {
+                    return header;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Gets the current form DPI used to scale legacy restored bounds.
         /// </summary>
@@ -248,6 +302,7 @@ namespace EidoTiaWorkbench.Forms {
             var import = new ImportView();
             var activity = new ActivityView();
             var settings = new SettingsView();
+            settings.Configure(this._controller);
             settings.RepositoryChanged += (s, e) => this._controller.SetSelectedRepository(settings.RepositoryPath);
             settings.ThemePreferenceChanged += (s, e) => this.ApplyThemePreference(settings.ThemePreference);
 
@@ -257,6 +312,7 @@ namespace EidoTiaWorkbench.Forms {
             this._views["Import"] = import;
             this._views["Activity"] = activity;
             this._views["Settings"] = settings;
+            this._views["Validation"] = new ValidationView();
 
             this._presenters.Add(new DashboardPresenter(dashboard, this._controller, this._state, this.Navigate));
             this._presenters.Add(new ProjectPresenter(project, this._controller, this._state));
@@ -274,8 +330,9 @@ namespace EidoTiaWorkbench.Forms {
             try {
                 await this._controller.RefreshPortalInstancesAsync();
                 this.RefreshCurrentView();
-            } catch {
-                // Startup discovery is best-effort; explicit Project refresh will show details.
+            }
+            catch (Exception ex) {
+                this._statusLabel.Text = "Openness discovery: " + ex.Message;
             }
         }
 
@@ -298,17 +355,31 @@ namespace EidoTiaWorkbench.Forms {
         /// </summary>
         private void UpdateShellFromState() {
             this._header.Bind(this._state);
+            this.Text = ProductInfo.Name + " | " + (this._controller.SelectedInstallation == null ? "Offline" : "TIA V" + this._controller.SelectedInstallation.MajorVersion);
             this._overlay.Bind(this._state.CurrentOperation);
             this.UseWaitCursor = this._state.CurrentOperation.IsBusy;
             Cursor.Current = this._state.CurrentOperation.IsBusy ? Cursors.WaitCursor : Cursors.Default;
-            this._viewHost.Enabled = !this._state.CurrentOperation.IsBusy;
+            if (!this._state.CurrentOperation.IsBusy) {
+                foreach (var pair in this._busyControls) {
+                    if (!pair.Key.IsDisposed) {
+                        pair.Key.Enabled = pair.Value;
+                    }
+                }
+
+                this._busyControls.Clear();
+            }
 
             this._statusLabel.Text = this._state.CurrentOperation.IsBusy
                 ? (string.IsNullOrWhiteSpace(this._state.CurrentOperation.StatusText) ? this._state.CurrentOperation.Name : this._state.CurrentOperation.StatusText) + " " + this._state.CurrentOperation.CurrentArtifact
                 : (this._state.LastOperationResult ?? "Ready");
+            this._statusLabel.ToolTipText = this._statusLabel.Text;
+            if (this._statusLabel.Text.Length > 120) {
+                this._statusLabel.Text = this._statusLabel.Text.Substring(0, 117) + "…";
+            }
+
             this._repositoryLabel.Text = string.IsNullOrWhiteSpace(this._state.SelectedRepository)
-                ? string.Empty
-                : "Workspace: " + this._state.SelectedRepository;
+                ? this._state.IntegrationVersion
+                : this._state.IntegrationVersion + " | " + this._state.PortalConnectionState;
             this._progress.Visible = this._state.CurrentOperation.IsBusy;
             this._progress.Style = this._state.CurrentOperation.IsIndeterminate ? ProgressBarStyle.Marquee : ProgressBarStyle.Continuous;
             this._progress.Maximum = Math.Max(1, this._state.CurrentOperation.Maximum);
@@ -327,30 +398,75 @@ namespace EidoTiaWorkbench.Forms {
                 return;
             }
 
-            if (this._currentViewKey == "Dashboard") {
+            if (this._currentViewKey == "Validation") {
+                ((ValidationView)this._views[this._currentViewKey]).Bind(this._state);
+            }
+            else if (this._currentViewKey == "Dashboard") {
                 ((DashboardView)this._views[this._currentViewKey]).Bind(this._state);
-            } else if (this._currentViewKey == "Project") {
+            }
+            else if (this._currentViewKey == "Project") {
                 var view = (ProjectView)this._views[this._currentViewKey];
                 view.Bind(this._state);
                 view.ShowInstances(this._state.PortalInstances);
-            } else if (this._currentViewKey == "Export") {
+            }
+            else if (this._currentViewKey == "Export") {
                 ((ExportView)this._views[this._currentViewKey]).Bind(this._state);
-            } else if (this._currentViewKey == "Import") {
+            }
+            else if (this._currentViewKey == "Import") {
                 ((ImportView)this._views[this._currentViewKey]).Bind(this._state);
-            } else if (this._currentViewKey == "Activity") {
+            }
+            else if (this._currentViewKey == "Activity") {
                 ((ActivityView)this._views[this._currentViewKey]).Bind(this._state);
-            } else if (this._currentViewKey == "Settings") {
+            }
+            else if (this._currentViewKey == "Settings") {
                 ((SettingsView)this._views[this._currentViewKey]).Bind(this._state, this._controller.LogFilePath);
             }
 
+            this.ApplyCommandAvailability(this._views[this._currentViewKey]);
             AppTheme.ApplyThemeTree(this._views[this._currentViewKey]);
         }
 
-        /// <summary>
-        /// Handles sidebar navigation commands.
-        /// </summary>
-        /// <param name="sender">Sidebar that raised the event.</param>
-        /// <param name="e">Navigation event arguments.</param>
+        /// <summary>Applies current command availability to all buttons in a view.</summary>
+        /// <param name="root">Visible control subtree to update on the UI thread.</param>
+        private void ApplyCommandAvailability(Control root) {
+            foreach (Control child in root.Controls) {
+                var button = child as Button;
+                if (button != null) {
+                    switch (button.Text) {
+                        case "Attach to TIA Portal":
+                        case "Attach selected":
+                        case "Start new instance":
+                        case "Refresh instances":
+                            button.Enabled = this._commands.CanAttachPortal;
+                            break;
+                        case "Scan project":
+                        case "Refresh":
+                            button.Enabled = this._commands.CanScanProject;
+                            break;
+                        case "Open project":
+                            button.Enabled = this._state.HasOpennessAdapter && !this._state.CurrentOperation.IsBusy;
+                            break;
+                        case "Export changed artifacts":
+                            button.Enabled = this._commands.CanExport;
+                            break;
+                        case "REAL IMPORT":
+                            button.Enabled = this._commands.CanImport;
+                            break;
+                    }
+                }
+
+                if (this._state.CurrentOperation.IsBusy && (child is ButtonBase || child is ComboBox)) {
+                    if (!this._busyControls.ContainsKey(child)) {
+                        this._busyControls.Add(child, child.Enabled);
+                    }
+
+                    child.Enabled = false;
+                }
+
+                this.ApplyCommandAvailability(child);
+            }
+        }
+
         private void Sidebar_NavigationRequested(object sender, NavigationEventArgs e) {
             if (e.Key == "About") {
                 using (var about = new AboutForm()) {
@@ -378,9 +494,17 @@ namespace EidoTiaWorkbench.Forms {
             }
 
             this._currentViewKey = key;
+
             this._sidebar.SetActive(key);
             this._viewHost.Controls.Clear();
             var view = this._views[key];
+            var pageHeader = FindPageHeader(view);
+            this._header.SetSection(key, pageHeader?.DescriptionText ?? string.Empty);
+            if (pageHeader != null) {
+                pageHeader.Visible = false;
+            }
+
+            this._header.Bind(this._state);
             view.Dock = DockStyle.Fill;
             this._viewHost.Controls.Add(view);
             this.RefreshCurrentView();
@@ -404,12 +528,22 @@ namespace EidoTiaWorkbench.Forms {
         /// </summary>
         /// <param name="preference">Theme preference selected by the user.</param>
         private void ApplyThemePreference(ThemePreference preference) {
+            var previous = ThemeColors.Snapshot();
             AppTheme.ChangePreference(this, preference);
+
+            // Cached pages outside the visible tree must switch palettes too.
+            foreach (var view in this._views.Values) {
+                if (view.Parent == null) {
+                    AppTheme.ApplyThemeTree(view, previous);
+                }
+            }
+
             this._viewHost.BackColor = ThemeColors.Background;
             this._statusStrip.BackColor = ThemeColors.Surface;
             this._statusLabel.ForeColor = ThemeColors.TextSecondary;
             this._repositoryLabel.ForeColor = ThemeColors.TextSecondary;
             this._header.Bind(this._state);
+            this.Text = ProductInfo.Name + " | " + (this._controller.SelectedInstallation == null ? "Offline" : "TIA V" + this._controller.SelectedInstallation.MajorVersion);
             this._sidebar.SetActive(this._currentViewKey);
             this.RefreshCurrentView();
         }
@@ -438,7 +572,8 @@ namespace EidoTiaWorkbench.Forms {
                 };
                 var text = string.Join("|", values);
                 File.WriteAllText(this.PlacementFilePath, text);
-            } catch {
+            }
+            catch {
                 // Window placement should never block shutdown.
             }
         }
@@ -488,7 +623,8 @@ namespace EidoTiaWorkbench.Forms {
                 if (bool.TryParse(parts[4], out maximized) && maximized) {
                     this.WindowState = FormWindowState.Maximized;
                 }
-            } catch {
+            }
+            catch {
                 this.StartPosition = FormStartPosition.CenterScreen;
             }
         }

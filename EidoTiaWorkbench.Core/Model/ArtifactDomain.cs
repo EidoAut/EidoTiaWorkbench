@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ArtifactDomain.cs
+// Identifies the engineering domain that owns an exportable or importable artifact.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Model {
     /// <summary>
     /// Identifies the engineering domain that owns an exportable or importable artifact.

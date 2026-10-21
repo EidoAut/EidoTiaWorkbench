@@ -1,5 +1,12 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportItem.cs
+// Represents one exportable artifact discovered in a TIA project. This is a lightweight model object used
+// by the UI and services to avoid holding onto live Openness objects across operations.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +17,7 @@ namespace EidoTiaWorkbench.Core.Model {
     /// This is a lightweight model object used by the UI and services to avoid
     /// holding onto live Openness objects across operations.
     /// </summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class ExportItem {
         /// <summary>
         /// Initializes a new instance of the <see cref="ExportItem"/> class.
@@ -85,96 +93,109 @@ namespace EidoTiaWorkbench.Core.Model {
         /// Gets the human-friendly path identifying the CPU, e.g. "Device1/CPU_1516".
         /// This is used to resolve the target PlcSoftware by device + CPU name.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string CpuPath {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the logical group path inside PLC software, e.g. "Blocks/Drives/Motion".
         /// Used to build deterministic repo paths and to locate the destination group on import.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string GroupPath {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the object name as shown in TIA, e.g. "FB10", "OB1", "UDT3", or "Signals".
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string Name {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the kind of artifact, such as FB, FC, OB, UDT, DB, or tag table.
         /// Determines export/import handling and output naming.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public ExportKind Kind {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the stable logical key used to re-resolve the object later.
         /// This should remain stable across sessions and scans, unlike in-memory object references.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string LogicalKey {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the optional target type discovered from the engineering project.
         /// For HMI screens this normally contains the device or runtime family.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string TargetType {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the artifact domain from the central capability catalog.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public ArtifactDomain Domain {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the repository category from the central capability catalog.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string Category {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets a value indicating whether this concrete item can be exported.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public bool CanExport {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets a value indicating whether this concrete item can be imported.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public bool CanImport {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the reason an operation is unavailable for this item.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string UnavailableReason {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets known logical dependencies for this item.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public IReadOnlyList<string> Dependencies {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets serializable metadata used by resolvers and repository inventory.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public IDictionary<string, string> Metadata {
-            get;
+            get; private set;
         }
 
         /// <summary>

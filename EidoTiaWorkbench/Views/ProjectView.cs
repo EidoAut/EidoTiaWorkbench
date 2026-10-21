@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ProjectView.cs
+// Displays TIA Portal instances, project selection, and session controls.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -15,6 +21,9 @@ namespace EidoTiaWorkbench.Views {
     /// </summary>
     public sealed class ProjectView : UserControl {
         private readonly ListView _instances;
+        private readonly ImageList _rowImages;
+        private readonly Bitmap _rowSpacer;
+        private readonly Label _emptySessions;
         private readonly CheckBox _startWithUi;
         private readonly TextBox _projectPath;
         private readonly InfoCard _projectInfo;
@@ -27,18 +36,21 @@ namespace EidoTiaWorkbench.Views {
         public ProjectView() {
             this.Dock = DockStyle.Fill;
             this.BackColor = ThemeColors.Background;
-            this.Padding = new Padding(18);
+            this.Padding = new Padding(ThemeMetrics.Xl);
+            this.AutoScroll = true;
             this._toolTip = new ToolTip();
 
             var root = new TableLayoutPanel {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
+                AutoSize = true,
                 ColumnCount = 1,
                 RowCount = 5,
             };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
             var header = new PageHeader();
@@ -51,7 +63,7 @@ namespace EidoTiaWorkbench.Views {
             AddButton(toolbar, "Attach selected", (s, e) => this.AttachSelectedRequested?.Invoke(this, EventArgs.Empty), true);
             AddButton(toolbar, "Start new instance", (s, e) => this.StartPortalRequested?.Invoke(this, EventArgs.Empty));
             AddButton(toolbar, "Disconnect", (s, e) => this.DisconnectRequested?.Invoke(this, EventArgs.Empty));
-            this._startWithUi = new CheckBox {
+            this._startWithUi = new ThemedCheckBox {
                 Text = "Start TIA with UI",
                 Checked = true,
                 AutoSize = true,
@@ -66,8 +78,35 @@ namespace EidoTiaWorkbench.Views {
                 HideSelection = false,
                 BorderStyle = BorderStyle.None,
             };
-            this._instances.Columns.Add("Instance", 220);
+            this._rowImages = new ImageList { ImageSize = new Size(1, 32), ColorDepth = ColorDepth.Depth32Bit };
+            this._rowSpacer = new Bitmap(1, 32);
+            this._rowImages.Images.Add(this._rowSpacer);
+
+            this._instances.SmallImageList = this._rowImages;
+            this._instances.Height = 176;
+            this._instances.Dock = DockStyle.Top;
+            this._instances.MultiSelect = false;
+            this._instances.Columns.Add("TIA Portal session", 220);
             this._instances.Columns.Add("Project path", 620);
+            this._instances.SizeChanged += (s, e) =>
+                this._instances.Columns[1].Width = Math.Max(
+                    200,
+                    this._instances.ClientSize.Width - this._instances.Columns[0].Width);
+
+            var sessions = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(16), BackColor = ThemeColors.Surface, Margin = new Padding(0, 12, 0, 16) };
+            sessions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            sessions.Controls.Add(new Label { Text = "Available sessions", Font = ThemeFonts.SectionTitle, AutoSize = true, Margin = new Padding(0, 0, 0, 12) });
+            this._emptySessions = new Label {
+                Text = "No TIA Portal sessions found.\r\nRefresh the list, or start a new instance using the controls above.",
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                Padding = new Padding(16),
+                BackColor = ThemeColors.SurfaceSecondary,
+                ForeColor = ThemeColors.TextSecondary,
+            };
+            sessions.Controls.Add(this._emptySessions);
+            sessions.Controls.Add(this._instances);
+            this._instances.Visible = false;
 
             var bottomPanel = new TableLayoutPanel {
                 Dock = DockStyle.Fill,
@@ -75,6 +114,7 @@ namespace EidoTiaWorkbench.Views {
                 RowCount = 2,
                 AutoSize = true,
             };
+            bottomPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             bottomPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             bottomPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
@@ -100,7 +140,7 @@ namespace EidoTiaWorkbench.Views {
                 Text = "Browse",
                 Anchor = AnchorStyles.None,
                 AutoSize = false,
-                Size = new Size(96, 36),
+                Size = new Size(104, 40),
                 Margin = new Padding(0, 0, 8, 0),
             };
             browseButton.Click += (s, e) => this.BrowseProject();
@@ -108,7 +148,7 @@ namespace EidoTiaWorkbench.Views {
                 Text = "Open project",
                 Anchor = AnchorStyles.None,
                 AutoSize = false,
-                Size = new Size(116, 36),
+                Size = new Size(148, 40),
                 Margin = Padding.Empty,
             };
             openButton.Click += (s, e) => this.OpenProjectRequested?.Invoke(this, EventArgs.Empty);
@@ -123,9 +163,10 @@ namespace EidoTiaWorkbench.Views {
             root.Controls.Add(header, 0, 0);
             root.Controls.Add(this._warning, 0, 1);
             root.Controls.Add(toolbar, 0, 2);
-            root.Controls.Add(this._instances, 0, 3);
+            root.Controls.Add(sessions, 0, 3);
             root.Controls.Add(bottomPanel, 0, 4);
             this.Controls.Add(root);
+            AppTheme.ApplyThemeTree(this);
         }
 
         /// <summary>
@@ -192,10 +233,11 @@ namespace EidoTiaWorkbench.Views {
             var project = state.ActiveProject;
             if (project == null) {
                 this._projectInfo.SetContent("Project", "No project adopted or opened");
-            } else {
+            }
+            else {
                 this._projectInfo.SetContent(
                     "Project",
-                    project.Name + " | PLC: " + project.PlcTargets.Count + " | HMI: " + project.HmiTargets.Count,
+                    project.Name + "  ·  " + state.IntegrationVersion + "  ·  PLC: " + project.PlcTargets.Count + "  ·  HMI: " + project.HmiTargets.Count + "\r\n" + project.Path,
                     state.PortalOwnership.ToString(),
                     state.PortalOwnership == PortalOwnership.Owned ? ThemeColors.Info : ThemeColors.Success);
                 if (string.IsNullOrWhiteSpace(this._projectPath.Text)) {
@@ -214,6 +256,7 @@ namespace EidoTiaWorkbench.Views {
         /// </summary>
         /// <param name="instances">Instances to show.</param>
         public void ShowInstances(IEnumerable<TiaPortalInstanceInfo> instances) {
+            this._instances.BeginUpdate();
             this._instances.Items.Clear();
             foreach (var instance in instances) {
                 var item = new ListViewItem(instance.ProcessId.HasValue
@@ -223,6 +266,22 @@ namespace EidoTiaWorkbench.Views {
                 item.Tag = instance.InstanceIndex;
                 this._instances.Items.Add(item);
             }
+
+            this._instances.EndUpdate();
+            this._emptySessions.Visible = this._instances.Items.Count == 0;
+            this._instances.Visible = this._instances.Items.Count > 0;
+            this._instances.Height = ThemeMetrics.Scale(this, Math.Min(240, 44 + (this._instances.Items.Count * 36)));
+        }
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                this._toolTip.Dispose();
+                this._rowImages.Dispose();
+                this._rowSpacer.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         /// <summary>

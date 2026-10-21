@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ApplicationState.cs
+// Observable application state shared by presenters and shell.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +43,14 @@ namespace EidoTiaWorkbench.Application {
         /// Occurs when a new activity entry is appended to the activity log.
         /// </summary>
         public event EventHandler<ActivityEntryEventArgs> ActivityAdded;
+
+        /// <summary>Gets or sets a value indicating whether engineering commands have a selected adapter.</summary>
+        public bool HasOpennessAdapter {
+            get; set;
+        }
+
+        /// <summary>Gets or sets the active runtime label shown in the shell.</summary>
+        public string IntegrationVersion { get; set; } = "Offline";
 
         /// <summary>
         /// Gets or sets the current connection state of the TIA Portal session.

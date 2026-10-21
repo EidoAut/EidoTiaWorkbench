@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// CommandStateService.cs
+// Centralizes command availability so views do not duplicate state rules.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Application {
     /// <summary>
     /// Centralizes command availability so views do not duplicate state rules.
@@ -29,7 +35,7 @@ namespace EidoTiaWorkbench.Application {
         /// </summary>
         public bool CanAttachPortal {
             get {
-                return this.CanStartOperation;
+                return this.CanStartOperation && this._state.HasOpennessAdapter;
             }
         }
 

@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ActivityEntryEventArgs.cs
+// Provides event data for a newly appended activity entry.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 
 namespace EidoTiaWorkbench.Application {

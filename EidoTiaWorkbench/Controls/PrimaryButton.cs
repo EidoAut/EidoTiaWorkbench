@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// PrimaryButton.cs
+// Provides the standard primary action button style.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using EidoTiaWorkbench.Theme;
 
 namespace EidoTiaWorkbench.Controls {

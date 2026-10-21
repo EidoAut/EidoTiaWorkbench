@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportResult.cs
+// Summarizes an export run for presentation and follow-up actions.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +15,7 @@ namespace EidoTiaWorkbench.Core.Export {
     /// <summary>
     /// Summarizes an export run for presentation and follow-up actions.
     /// </summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class ExportResult {
         /// <summary>
         /// Initializes a new instance of the <see cref="ExportResult"/> class.
@@ -20,6 +27,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the physical folder where this export run was written.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string OutputRoot {
             get; set;
         }
@@ -27,6 +35,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the total number of items written to disk.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int Exported {
             get; set;
         }
@@ -34,6 +43,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the total number of items skipped due to unchanged content in incremental mode.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int Skipped {
             get; set;
         }
@@ -41,6 +51,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the UTC time when the export run started.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public DateTime StartedUtc {
             get; set;
         }
@@ -48,6 +59,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the UTC time when the export run finished.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public DateTime CompletedUtc {
             get; set;
         }
@@ -55,6 +67,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the overall export status derived from artifact outcomes.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public ExportRunStatus Status {
             get; set;
         }
@@ -62,6 +75,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the manifest path written for this run.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string ManifestPath {
             get; set;
         }
@@ -69,6 +83,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the operation report path written for this run.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public string OperationReportPath {
             get; set;
         }
@@ -76,6 +91,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the first artifact result that detected a lost session.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public ArtifactExportRecord FirstSessionFailure {
             get; set;
         }
@@ -83,6 +99,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the total number of items blocked by TIA Portal protection or permissions.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int Restricted {
             get; set;
         }
@@ -90,6 +107,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the total number of items unavailable through the public API.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int Unavailable {
             get; set;
         }
@@ -97,6 +115,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the total number of items unsupported by this export pipeline.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int Unsupported {
             get; set;
         }
@@ -104,6 +123,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the total number of artifacts aborted because the TIA session was lost.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int AbortedSessionLost {
             get; set;
         }
@@ -111,6 +131,7 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets or sets the total number of artifacts cancelled before an export attempt.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public int Cancelled {
             get; set;
         }
@@ -118,17 +139,20 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets the authoritative per-artifact results for this run.
         /// </summary>
-        public List<ArtifactExportRecord> Artifacts { get; } = new List<ArtifactExportRecord>();
+        [System.Runtime.Serialization.DataMember]
+        public List<ArtifactExportRecord> Artifacts { get; private set; } = new List<ArtifactExportRecord>();
 
         /// <summary>
         /// Gets the fatal errors that prevented individual items from exporting.
         /// </summary>
-        public List<ExportError> Errors { get; } = new List<ExportError>();
+        [System.Runtime.Serialization.DataMember]
+        public List<ExportError> Errors { get; private set; } = new List<ExportError>();
 
         /// <summary>
         /// Gets the non-fatal issues encountered during export.
         /// </summary>
-        public List<ExportWarning> Warnings { get; } = new List<ExportWarning>();
+        [System.Runtime.Serialization.DataMember]
+        public List<ExportWarning> Warnings { get; private set; } = new List<ExportWarning>();
 
         /// <summary>
         /// Gets a value indicating whether at least one fatal export error occurred.

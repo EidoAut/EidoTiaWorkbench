@@ -11,6 +11,8 @@ obj/
 *.log
 visual-*.log
 validation-screenshots/
+artifacts/
+/Abrir EidoTiaWorkbench.lnk
 tia-git-exporter-operation-report*.txt
 *_VALIDATION_REPORT.md
 *_VALIDATION.md

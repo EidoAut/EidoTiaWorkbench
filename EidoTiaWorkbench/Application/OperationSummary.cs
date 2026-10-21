@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// OperationSummary.cs
+// Summarizes the outcome of an export, import, project, or session operation.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Collections.Generic;
 
 namespace EidoTiaWorkbench.Application {
@@ -19,7 +25,9 @@ namespace EidoTiaWorkbench.Application {
         /// </summary>
         public string SuccessLabel {
             get; set;
-        } = "OK";
+        }
+
+        = "OK";
 
         /// <summary>
         /// Gets or sets the number of successful items.

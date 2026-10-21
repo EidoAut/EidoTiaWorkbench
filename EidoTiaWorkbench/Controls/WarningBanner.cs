@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// WarningBanner.cs
+// Displays a persistent warning message at the top of a view.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Theme;

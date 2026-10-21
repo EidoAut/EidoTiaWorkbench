@@ -6,7 +6,7 @@
       "copyrightText": "Copyright (c) 2026 EIDO AUTOMATION, S.L.U.",
       "documentExposedElements": true,
       "documentInternalElements": true,
-      "documentPrivateElements": true,
+      "documentPrivateElements": false,
       "xmlHeader": false
     },
     "orderingRules": {

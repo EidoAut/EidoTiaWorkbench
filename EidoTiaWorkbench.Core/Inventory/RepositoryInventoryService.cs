@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// RepositoryInventoryService.cs
+// Scans the structured export repository without requiring TIA Portal.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -55,7 +61,8 @@ namespace EidoTiaWorkbench.Core.Inventory {
             ManifestService.Manifest manifest = null;
             try {
                 manifest = this._manifestService.Load(repoRoot);
-            } catch {
+            }
+            catch {
                 manifest = new ManifestService.Manifest();
             }
 
@@ -102,7 +109,8 @@ namespace EidoTiaWorkbench.Core.Inventory {
                 state = string.Equals(hash, manifestEntry.Sha256, StringComparison.OrdinalIgnoreCase)
                     ? RepositoryArtifactState.Identical
                     : RepositoryArtifactState.Modified;
-            } else if (item != null) {
+            }
+            else if (item != null) {
                 state = RepositoryArtifactState.New;
             }
 
@@ -230,9 +238,11 @@ namespace EidoTiaWorkbench.Core.Inventory {
                 parts = parts.Skip(1).ToArray();
             }
 
-            var categoryIndex = Array.FindIndex(parts, p => ArtifactCatalog.All.Any(d =>
-                d.Domain == ArtifactDomain.Plc &&
-                string.Equals(d.Category, p, StringComparison.OrdinalIgnoreCase)));
+            var categoryIndex = Array.FindIndex(
+                parts,
+                p => ArtifactCatalog.All.Any(d =>
+                    d.Domain == ArtifactDomain.Plc &&
+                    string.Equals(d.Category, p, StringComparison.OrdinalIgnoreCase)));
 
             if (categoryIndex <= 0 || categoryIndex >= parts.Length - 1) {
                 warning = "Repository path does not match the expected CPU/category/artifact layout.";
@@ -264,9 +274,11 @@ namespace EidoTiaWorkbench.Core.Inventory {
         private static ExportItem TryCreateHmiClassicItem(string[] parts, out string warning) {
             warning = null;
 
-            var categoryIndex = Array.FindIndex(parts, p => ArtifactCatalog.All.Any(d =>
-                d.Domain == ArtifactDomain.HmiClassic &&
-                string.Equals(d.Category, p, StringComparison.OrdinalIgnoreCase)));
+            var categoryIndex = Array.FindIndex(
+                parts,
+                p => ArtifactCatalog.All.Any(d =>
+                    d.Domain == ArtifactDomain.HmiClassic &&
+                    string.Equals(d.Category, p, StringComparison.OrdinalIgnoreCase)));
             if (categoryIndex <= 1 || categoryIndex >= parts.Length - 1) {
                 warning = "Repository path does not match the expected HMI/<target>/<category>/<artifact> layout.";
                 return null;
@@ -388,7 +400,8 @@ namespace EidoTiaWorkbench.Core.Inventory {
             try {
                 XDocument.Load(filePath);
                 return true;
-            } catch {
+            }
+            catch {
                 return false;
             }
         }
@@ -401,7 +414,8 @@ namespace EidoTiaWorkbench.Core.Inventory {
         private static string TryHash(string filePath) {
             try {
                 return HashHelper.Sha256Hex(File.ReadAllBytes(filePath));
-            } catch {
+            }
+            catch {
                 return null;
             }
         }

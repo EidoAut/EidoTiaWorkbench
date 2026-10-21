@@ -1,18 +1,22 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// PlcInventoryService.cs
+// Discovers PLC software artifacts (UDTs, blocks, and optional tag tables) for S7-1200 and S7-1500 CPUs.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-
+using EidoTiaWorkbench.Core.Model;
 using Siemens.Engineering;
 using Siemens.Engineering.HW;
 using Siemens.Engineering.HW.Features;
 using Siemens.Engineering.SW;
 using Siemens.Engineering.SW.Blocks;
-
-using EidoTiaWorkbench.Core.Model;
 
 namespace EidoTiaWorkbench.Core.Openness {
     /// <summary>
@@ -166,7 +170,8 @@ namespace EidoTiaWorkbench.Core.Openness {
                 if (bgProp?.GetValue(sp, null) is PlcBlockGroup bg) {
                     return bg;
                 }
-            } catch {
+            }
+            catch {
                 // Best-effort only: absence/reflection failures should not break inventory.
             }
 
@@ -191,7 +196,7 @@ namespace EidoTiaWorkbench.Core.Openness {
 
             TraverseGenericGroup(
                 root: typeGroupRoot,
-                groupPath: prefix, // Root name is implicit; keep paths relative to root for stable re-resolution.
+                groupPath: prefix,
                 getChildren: g => GetChildren(g, "Groups"),
                 getItems: g => GetChildren(g, "Types"),
                 addItem: (groupPath, objName) => {
@@ -399,7 +404,7 @@ namespace EidoTiaWorkbench.Core.Openness {
 
             TraverseGenericGroup(
                 root: tagRoot,
-                groupPath: prefix, // Root name is implicit; keep paths relative to root for stable re-resolution.
+                groupPath: prefix,
                 getChildren: g => GetChildren(g, "Groups"),
                 getItems: g => GetChildren(g, "TagTables"),
                 addItem: (groupPath, objName) => {

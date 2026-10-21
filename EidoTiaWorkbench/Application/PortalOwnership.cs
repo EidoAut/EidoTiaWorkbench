@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// PortalOwnership.cs
+// Identifies whether the active TIA Portal process is owned by this application.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Application {
     /// <summary>
     /// Identifies whether the active TIA Portal process is owned by this application.

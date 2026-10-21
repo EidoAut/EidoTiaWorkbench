@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ActivityPresenter.cs
+// Wires activity log view events to controller commands and state notifications.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using EidoTiaWorkbench.Application;
 using EidoTiaWorkbench.Views;
 

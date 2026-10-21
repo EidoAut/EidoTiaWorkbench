@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportService.cs
+// Imports XML artifacts from the structured export folder back into the open TIA project.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,7 +15,11 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
-
+using EidoTiaWorkbench.Core.Integration;
+using EidoTiaWorkbench.Core.Inventory;
+using EidoTiaWorkbench.Core.Model;
+using EidoTiaWorkbench.Core.Openness;
+using EidoTiaWorkbench.Core.Utilities;
 using Siemens.Engineering;
 using Siemens.Engineering.Hmi;
 using Siemens.Engineering.Hmi.Screen;
@@ -18,11 +28,6 @@ using Siemens.Engineering.HW.Features;
 using Siemens.Engineering.SW;
 using Siemens.Engineering.SW.Blocks;
 using Siemens.Engineering.SW.Tags;
-
-using EidoTiaWorkbench.Core.Inventory;
-using EidoTiaWorkbench.Core.Model;
-using EidoTiaWorkbench.Core.Openness;
-using EidoTiaWorkbench.Core.Utilities;
 
 namespace EidoTiaWorkbench.Core.Import {
     /// <summary>
@@ -126,7 +131,8 @@ namespace EidoTiaWorkbench.Core.Import {
                             null,
                             null);
                         ImportHmiArtifact(project, artifact, ImportConflictPolicy.Ask, createBackup: true, backupRoot: backupRoot, result: result);
-                    } else {
+                    }
+                    else {
                         // Resolve the target PLC software instance.
                         var plc = ResolvePlcSoftware(project, item.CpuPath);
                         if (plc == null) {
@@ -137,7 +143,8 @@ namespace EidoTiaWorkbench.Core.Import {
                         ImportSingle(plc, item, xmlPath);
                         result.Imported++;
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     // Import is best-effort across multiple items; record and continue.
                     result.Errors.Add(new ImportError(item, ex));
                     this._log.Error("Import failed for " + item, ex);
@@ -266,15 +273,28 @@ namespace EidoTiaWorkbench.Core.Import {
                         continue;
                     }
 
+                    ImportVersionGuard.Validate(artifact.RepositoryPath, 21);
                     if (artifact.Item.IsHmi) {
                         ImportHmiArtifact(project, artifact, conflictPolicy, createBackup, backupRoot, result);
-                    } else {
+                    }
+                    else {
                         var plc = ResolvePlcSoftware(project, artifact.Item.CpuPath);
                         if (plc == null) {
                             throw new InvalidOperationException("Could not resolve PLC software for: " + artifact.Item.CpuPath);
                         }
 
-                        ImportSingle(plc, artifact.Item, artifact.RepositoryPath);
+                        var existing = ResolveExistingPlcArtifact(plc, artifact.Item);
+                        if (!ImportConflictDecision.ShouldImport(existing != null, conflictPolicy)) {
+                            result.Skipped++;
+                            done++;
+                            continue;
+                        }
+
+                        if (existing != null && createBackup) {
+                            BackupExistingArtifact(existing, backupRoot, artifact.Item);
+                        }
+
+                        ImportSingle(plc, artifact.Item, artifact.RepositoryPath, existing != null);
                         result.Imported++;
                     }
 
@@ -289,7 +309,8 @@ namespace EidoTiaWorkbench.Core.Import {
                         Strategy = strategy,
                         ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
                     });
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     stopwatch.Stop();
                     done++;
                     AddImportExceptionContext(ex, artifact, strategy, conflictPolicy, createBackup);
@@ -360,11 +381,13 @@ namespace EidoTiaWorkbench.Core.Import {
 
                     if (artifact.Item.IsHmi) {
                         PreviewHmiArtifact(project, artifact, conflictPolicy, result);
-                    } else {
-                        result.Imported++;
-                        result.Warnings.Add("PLC artifact will be imported with the existing PLC importer: " + artifact.Item);
                     }
-                } catch (Exception ex) {
+                    else {
+                        var plc = ResolvePlcSoftware(project, artifact.Item.CpuPath);
+                        RecordPreview(artifact.Item, ResolveExistingPlcArtifact(plc, artifact.Item), conflictPolicy, "PLC artifact", result);
+                    }
+                }
+                catch (Exception ex) {
                     result.Errors.Add(new ImportError(artifact.Item, ex));
                 }
             }
@@ -454,9 +477,10 @@ namespace EidoTiaWorkbench.Core.Import {
             AddExceptionData(exception, "ImportStrategy", strategy);
             AddExceptionData(exception, "ConflictPolicy", conflictPolicy);
             AddExceptionData(exception, "CreateBackup", createBackup);
-            AddExceptionData(exception, "ImportOptions", conflictPolicy == ImportConflictPolicy.Skip
+            var importOptions = conflictPolicy == ImportConflictPolicy.Skip
                 ? "Create=None; Replace=NotUsed"
-                : "Create=None; Replace=Override");
+                : "Create=None; Replace=Override";
+            AddExceptionData(exception, "ImportOptions", importOptions);
         }
 
         /// <summary>
@@ -472,7 +496,8 @@ namespace EidoTiaWorkbench.Core.Import {
 
             try {
                 exception.Data[key] = value ?? string.Empty;
-            } catch (Exception) {
+            }
+            catch (Exception) {
                 // Exception.Data is best-effort diagnostic metadata.
             }
         }
@@ -553,8 +578,10 @@ namespace EidoTiaWorkbench.Core.Import {
             }
 
             var owner = method.DeclaringType == null ? string.Empty : method.DeclaringType.FullName + ".";
-            var parameters = string.Join(", ", method.GetParameters()
-                .Select(p => p.ParameterType.FullName + " " + p.Name));
+            var parameters = string.Join(
+                ", ",
+                method.GetParameters()
+                    .Select(p => p.ParameterType.FullName + " " + p.Name));
             return owner + method.Name + "(" + parameters + ")";
         }
 
@@ -570,93 +597,105 @@ namespace EidoTiaWorkbench.Core.Import {
 
             try {
                 return option + " (" + Convert.ToInt64(option) + ")";
-            } catch (Exception) {
+            }
+            catch (Exception) {
                 return Convert.ToString(option);
             }
         }
 
         /// <summary>
-        /// Checks whether an Openness failure invalidated the current TIA session.
+        /// Finds an existing PLC artifact without creating groups or changing the project.
         /// </summary>
-        /// <param name="exception">Exception from the failed artifact import.</param>
-        /// <param name="result">Mutable import result receiving warnings and cancellation count.</param>
-        /// <param name="total">Total artifact count in the import run.</param>
-        /// <param name="done">Artifacts already attempted, including the failed artifact.</param>
-        /// <param name="warning">Warning to log when the run must stop.</param>
-        /// <returns>True when the remaining artifacts must not be attempted with stale Openness references.</returns>
-        private bool ShouldAbortImportAfterFailure(
-            Exception exception,
-            ImportResult result,
-            int total,
-            int done,
-            out string warning) {
-            warning = null;
-            TiaSessionHealth health;
-            try {
-                health = this._session.CheckHealthOnSta();
-            } catch (Exception healthException) {
-                AddExceptionData(exception, "SessionHealthCheckException", healthException.ToString());
-                var remainingAfterHealthFailure = Math.Max(0, total - done);
-                result.Cancelled += remainingAfterHealthFailure;
-                warning = "Import aborted after artifact failure because TIA session health could not be checked. " +
-                          "Remaining artifacts not attempted: " + remainingAfterHealthFailure + ".";
-                result.Warnings.Add(warning);
-                return true;
+        /// <param name="plc">PLC software whose artifact collections are searched.</param>
+        /// <param name="item">Artifact identity and group path to resolve.</param>
+        /// <returns>The existing artifact, or null when the target cannot be resolved.</returns>
+        private static object ResolveExistingPlcArtifact(PlcSoftware plc, ExportItem item) {
+            string rootName;
+            string collection;
+            switch (item.Kind) {
+                case ExportKind.Udt:
+                    rootName = "TypeGroup";
+                    collection = "Types";
+                    break;
+                case ExportKind.Ob:
+                case ExportKind.Fb:
+                case ExportKind.Fc:
+                case ExportKind.Db:
+                    rootName = "BlockGroup";
+                    collection = "Blocks";
+                    break;
+                case ExportKind.PlcTagTable:
+                    rootName = "TagTableGroup";
+                    collection = "TagTables";
+                    break;
+                case ExportKind.PlcWatchTable:
+                    rootName = "WatchAndForceTableGroup";
+                    collection = "WatchTables";
+                    break;
+                case ExportKind.PlcForceTable:
+                    rootName = "WatchAndForceTableGroup";
+                    collection = "ForceTables";
+                    break;
+                case ExportKind.TechnologicalObject:
+                    rootName = "TechnologicalObjectGroup";
+                    collection = "TechnologicalObjects";
+                    break;
+                case ExportKind.PlcUserConstant:
+                    var split = SplitOwnerPath(NormalizeRootGroupPath(item.Kind, item.GroupPath));
+                    var ownerGroup = ResolveGenericGroupByPath(TryGetTagTableRoot(plc), split.Item1, "Groups");
+                    var table = ownerGroup == null ? null : ResolveNamedItem(ownerGroup, "TagTables", split.Item2);
+                    if (table == null) {
+                        throw new InvalidOperationException("PLC tag table was not found.");
+                    }
+
+                    return ResolveNamedItem(table, "UserConstants", item.Name);
+                default:
+                    throw new NotSupportedException("PLC conflict detection is unavailable for " + item.Kind);
             }
 
-            AddExceptionData(exception, "SessionHealthAfterFailure", health.ToDiagnosticString());
-            if (health.IsHealthy) {
-                return false;
+            var root = item.Kind == ExportKind.PlcTagTable ? TryGetTagTableRoot(plc) : GetPropertyValue(plc, rootName);
+            if (root == null) {
+                throw new NotSupportedException("PLC group unavailable: " + rootName);
             }
 
-            var remaining = Math.Max(0, total - done);
-            result.Cancelled += remaining;
-            warning = "Import aborted after artifact failure because the TIA session is no longer healthy. " +
-                      "Health=" + health.ToDiagnosticString() +
-                      ". Remaining artifacts not attempted: " + remaining + ".";
-            result.Warnings.Add(warning);
-            return true;
+            var group = ResolveGenericGroupByPath(root, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Groups");
+            return group == null ? null : ResolveNamedItem(group, collection, item.Name);
         }
 
-        /// <summary>
-        /// Imports a single item into the provided PLC software instance.
-        /// </summary>
-        /// <param name="plc">PLC software instance that receives the imported artifact.</param>
-        /// <param name="item">Artifact metadata used to select the correct import collection.</param>
-        /// <param name="xmlPath">Repository XML file to import.</param>
-        private static void ImportSingle(PlcSoftware plc, ExportItem item, string xmlPath) {
+        private static void ImportSingle(PlcSoftware plc, ExportItem item, string xmlPath, bool replace = false) {
+            ImportVersionGuard.Validate(xmlPath, 21);
             var fi = new FileInfo(xmlPath);
 
             switch (item.Kind) {
                 case ExportKind.Udt:
-                    ImportUdt(plc, item, fi);
+                    ImportUdt(plc, item, fi, replace);
                     return;
 
                 case ExportKind.Ob:
                 case ExportKind.Fb:
                 case ExportKind.Fc:
                 case ExportKind.Db:
-                    ImportBlock(plc, item, fi);
+                    ImportBlock(plc, item, fi, replace);
                     return;
 
                 case ExportKind.PlcTagTable:
-                    ImportTagTable(plc, item, fi);
+                    ImportTagTable(plc, item, fi, replace);
                     return;
 
                 case ExportKind.PlcWatchTable:
-                    ImportGenericPlcArtifact(plc, item, "WatchAndForceTableGroup", "WatchTables", fi);
+                    ImportGenericPlcArtifact(plc, item, "WatchAndForceTableGroup", "WatchTables", fi, replace);
                     return;
 
                 case ExportKind.PlcForceTable:
-                    ImportGenericPlcArtifact(plc, item, "WatchAndForceTableGroup", "ForceTables", fi);
+                    ImportGenericPlcArtifact(plc, item, "WatchAndForceTableGroup", "ForceTables", fi, replace);
                     return;
 
                 case ExportKind.PlcUserConstant:
-                    ImportPlcUserConstant(plc, item, fi);
+                    ImportPlcUserConstant(plc, item, fi, replace);
                     return;
 
                 case ExportKind.TechnologicalObject:
-                    ImportGenericPlcArtifact(plc, item, "TechnologicalObjectGroup", "TechnologicalObjects", fi);
+                    ImportGenericPlcArtifact(plc, item, "TechnologicalObjectGroup", "TechnologicalObjects", fi, replace);
                     return;
 
                 case ExportKind.HmiScreen:
@@ -951,7 +990,7 @@ namespace EidoTiaWorkbench.Core.Import {
             var item = artifact.Item;
             var target = ResolveRequiredHmiTarget(project, item);
             var existing = GetPropertyValue(target, singletonProperty);
-            if (existing != null && conflictPolicy == ImportConflictPolicy.Skip) {
+            if (!ImportConflictDecision.ShouldImport(existing != null, conflictPolicy)) {
                 result.Skipped++;
                 result.Warnings.Add("Skipped existing HMI singleton: " + item);
                 return;
@@ -1006,7 +1045,7 @@ namespace EidoTiaWorkbench.Core.Import {
             ImportResult result) {
             var item = artifact.Item;
             var existing = ResolveNamedItem(collection, null, item.Name);
-            if (existing != null && conflictPolicy == ImportConflictPolicy.Skip) {
+            if (!ImportConflictDecision.ShouldImport(existing != null, conflictPolicy)) {
                 result.Skipped++;
                 result.Warnings.Add("Skipped existing artifact: " + item);
                 return;
@@ -1155,6 +1194,11 @@ namespace EidoTiaWorkbench.Core.Import {
                 return;
             }
 
+            if (conflictPolicy == ImportConflictPolicy.Ask) {
+                result.Warnings.Add("Decision required (Ask): choose Replace or Skip for " + item);
+                return;
+            }
+
             result.Imported++;
             result.Warnings.Add("Replace existing " + label + ": " + item);
         }
@@ -1166,7 +1210,8 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="plc">PLC software instance that owns the type group.</param>
         /// <param name="item">Repository artifact metadata describing group path and UDT name.</param>
         /// <param name="xml">XML file to import into the resolved type collection.</param>
-        private static void ImportUdt(PlcSoftware plc, ExportItem item, FileInfo xml) {
+        /// <param name="replace">Whether an existing artifact may be overwritten after backup.</param>
+        private static void ImportUdt(PlcSoftware plc, ExportItem item, FileInfo xml, bool replace) {
             object root = plc.TypeGroup;
             if (root == null) {
                 throw new InvalidOperationException("PLC TypeGroup is not available.");
@@ -1177,7 +1222,7 @@ namespace EidoTiaWorkbench.Core.Import {
 
             // group.Types.Import(FileInfo, ImportOptions) or group.Types.Import(FileInfo)
             var typesCollection = GetPropertyValue(group, "Types");
-            InvokeImport(typesCollection, xml, replace: true);
+            InvokeImport(typesCollection, xml, replace);
         }
 
         /// <summary>
@@ -1186,12 +1231,13 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="plc">PLC software instance that owns the block group.</param>
         /// <param name="item">Repository artifact metadata describing group path and block name.</param>
         /// <param name="xml">XML file to import into the resolved block collection.</param>
-        private static void ImportBlock(PlcSoftware plc, ExportItem item, FileInfo xml) {
+        /// <param name="replace">Whether an existing artifact may be overwritten after backup.</param>
+        private static void ImportBlock(PlcSoftware plc, ExportItem item, FileInfo xml, bool replace) {
             var group = ResolveOrCreateGenericGroupByPath(plc.BlockGroup, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Groups");
 
             // group.Blocks.Import(FileInfo, ImportOptions) or group.Blocks.Import(FileInfo)
             var blocksCollection = GetPropertyValue(group, "Blocks");
-            InvokeImport(blocksCollection, xml, replace: true);
+            InvokeImport(blocksCollection, xml, replace);
         }
 
         /// <summary>
@@ -1200,7 +1246,8 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="plc">PLC software instance that owns the tag table group.</param>
         /// <param name="item">Repository artifact metadata describing group path and tag table name.</param>
         /// <param name="xml">XML file to import into the resolved tag table collection.</param>
-        private static void ImportTagTable(PlcSoftware plc, ExportItem item, FileInfo xml) {
+        /// <param name="replace">Whether an existing artifact may be overwritten after backup.</param>
+        private static void ImportTagTable(PlcSoftware plc, ExportItem item, FileInfo xml, bool replace) {
             var root = TryGetTagTableRoot(plc);
             if (root == null) {
                 throw new InvalidOperationException("PLC tag tables are not exposed by this Openness build.");
@@ -1209,7 +1256,7 @@ namespace EidoTiaWorkbench.Core.Import {
             var group = ResolveOrCreateGenericGroupByPath(root, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Groups");
 
             var tablesCollection = GetPropertyValue(group, "TagTables");
-            InvokeImport(tablesCollection, xml, replace: true);
+            InvokeImport(tablesCollection, xml, replace);
         }
 
         /// <summary>
@@ -1220,12 +1267,14 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="rootProperty">PLC software property exposing the root group.</param>
         /// <param name="collectionProperty">Group property exposing the import collection.</param>
         /// <param name="xml">Repository payload file.</param>
+        /// <param name="replace">Whether an existing artifact may be overwritten after backup.</param>
         private static void ImportGenericPlcArtifact(
             PlcSoftware plc,
             ExportItem item,
             string rootProperty,
             string collectionProperty,
-            FileInfo xml) {
+            FileInfo xml,
+            bool replace) {
             var root = GetPropertyValue(plc, rootProperty);
             if (root == null) {
                 throw new InvalidOperationException("PLC root group is not available: " + rootProperty + ".");
@@ -1233,7 +1282,7 @@ namespace EidoTiaWorkbench.Core.Import {
 
             var group = ResolveOrCreateGenericGroupByPath(root, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Groups");
             var collection = GetPropertyValue(group, collectionProperty);
-            InvokeImport(collection, xml, replace: true);
+            InvokeImport(collection, xml, replace);
         }
 
         /// <summary>
@@ -1242,7 +1291,8 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="plc">PLC software instance that receives the constant.</param>
         /// <param name="item">Constant identity; the group path ends with the owner tag table name.</param>
         /// <param name="xml">Repository payload file.</param>
-        private static void ImportPlcUserConstant(PlcSoftware plc, ExportItem item, FileInfo xml) {
+        /// <param name="replace">Whether an existing artifact may be overwritten after backup.</param>
+        private static void ImportPlcUserConstant(PlcSoftware plc, ExportItem item, FileInfo xml, bool replace) {
             var split = SplitOwnerPath(NormalizeRootGroupPath(item.Kind, item.GroupPath));
             var tagRoot = TryGetTagTableRoot(plc);
             if (tagRoot == null) {
@@ -1256,7 +1306,7 @@ namespace EidoTiaWorkbench.Core.Import {
             }
 
             var constants = GetPropertyValue(table, "UserConstants");
-            InvokeImport(constants, xml, replace: true);
+            InvokeImport(constants, xml, replace);
         }
 
         /// <summary>
@@ -1299,7 +1349,8 @@ namespace EidoTiaWorkbench.Core.Import {
                     try {
                         m.Invoke(opennessCollection, args);
                         return;
-                    } catch (TargetInvocationException ex) {
+                    }
+                    catch (TargetInvocationException ex) {
                         ThrowInvocationException(
                             t.FullName + ".Import",
                             ex,
@@ -1314,27 +1365,7 @@ namespace EidoTiaWorkbench.Core.Import {
                 }
             }
 
-            foreach (var m in methods) {
-                var p = m.GetParameters();
-                if (p.Length == 1 && p[0].ParameterType == typeof(FileInfo)) {
-                    try {
-                        m.Invoke(opennessCollection, new object[] { xml });
-                        return;
-                    } catch (TargetInvocationException ex) {
-                        ThrowInvocationException(
-                            t.FullName + ".Import",
-                            ex,
-                            DiagnosticData("OpennessCollectionType", t.FullName),
-                            DiagnosticData("OpennessMethodSignature", FormatMethodSignature(m)),
-                            DiagnosticData("ImportFile", xml.FullName),
-                            DiagnosticData("ImportReplaceRequested", replace),
-                            DiagnosticData("ImportOptionValue", "<file-only overload>"));
-                        throw;
-                    }
-                }
-            }
-
-            throw new MissingMethodException(t.FullName, "Import");
+            throw new NotSupportedException("No Import overload with explicit conflict options is available for " + t.FullName);
         }
 
         /// <summary>
@@ -1370,6 +1401,9 @@ namespace EidoTiaWorkbench.Core.Import {
             var backupPath = PathHelper.GetOutputFilePath(backupRoot, item);
             Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? ".");
             InvokeExport(existing, new FileInfo(backupPath), item.Kind);
+            if (!File.Exists(backupPath) || new FileInfo(backupPath).Length == 0) {
+                throw new IOException("Backup did not produce a non-empty payload; replacement was blocked.");
+            }
         }
 
         /// <summary>
@@ -1396,7 +1430,8 @@ namespace EidoTiaWorkbench.Core.Import {
                 try {
                     withOptions.Invoke(artifact, new object[] { destination, exportOption });
                     return;
-                } catch (TargetInvocationException ex) {
+                }
+                catch (TargetInvocationException ex) {
                     ThrowInvocationException(
                         artifact.GetType().FullName + ".Export",
                         ex,
@@ -1416,7 +1451,8 @@ namespace EidoTiaWorkbench.Core.Import {
                 try {
                     fileOnly.Invoke(artifact, new object[] { destination });
                     return;
-                } catch (TargetInvocationException ex) {
+                }
+                catch (TargetInvocationException ex) {
                     ThrowInvocationException(
                         artifact.GetType().FullName + ".Export",
                         ex,
@@ -1459,7 +1495,8 @@ namespace EidoTiaWorkbench.Core.Import {
                 var importOption = CreateImportOption(method.GetParameters()[1].ParameterType, replace);
                 var args = new object[] { xml, importOption };
                 method.Invoke(target, args);
-            } catch (TargetInvocationException ex) {
+            }
+            catch (TargetInvocationException ex) {
                 ThrowInvocationException(
                     target.GetType().FullName + "." + methodName,
                     ex,
@@ -1484,7 +1521,7 @@ namespace EidoTiaWorkbench.Core.Import {
                 return Enum.Parse(enumType, name);
             }
 
-            return Enum.ToObject(enumType, 0);
+            throw new NotSupportedException("Import option " + name + " is not exposed by " + enumType.FullName);
         }
 
         /// <summary>
@@ -1532,7 +1569,8 @@ namespace EidoTiaWorkbench.Core.Import {
                 object found;
                 try {
                     found = find.Invoke(collection, new object[] { name });
-                } catch (TargetInvocationException ex) {
+                }
+                catch (TargetInvocationException ex) {
                     ThrowInvocationException(
                         collection.GetType().FullName + ".Find",
                         ex,
@@ -1645,7 +1683,8 @@ namespace EidoTiaWorkbench.Core.Import {
                 if (created != null) {
                     return created;
                 }
-            } catch (TargetInvocationException ex) {
+            }
+            catch (TargetInvocationException ex) {
                 ThrowInvocationException(
                     collection.GetType().FullName + ".Create",
                     ex,
@@ -2036,6 +2075,50 @@ namespace EidoTiaWorkbench.Core.Import {
         private static string GetStringProperty(object obj, string propertyName) {
             var v = GetPropertyValue(obj, propertyName);
             return v as string;
+        }
+
+        /// <summary>
+        /// Checks whether an Openness failure invalidated the current TIA session.
+        /// </summary>
+        /// <param name="exception">Exception from the failed artifact import.</param>
+        /// <param name="result">Mutable import result receiving warnings and cancellation count.</param>
+        /// <param name="total">Total artifact count in the import run.</param>
+        /// <param name="done">Artifacts already attempted, including the failed artifact.</param>
+        /// <param name="warning">Warning to log when the run must stop.</param>
+        /// <returns>True when the remaining artifacts must not be attempted with stale Openness references.</returns>
+        private bool ShouldAbortImportAfterFailure(
+            Exception exception,
+            ImportResult result,
+            int total,
+            int done,
+            out string warning) {
+            warning = null;
+            TiaSessionHealth health;
+            try {
+                health = this._session.CheckHealthOnSta();
+            }
+            catch (Exception healthException) {
+                AddExceptionData(exception, "SessionHealthCheckException", healthException.ToString());
+                var remainingAfterHealthFailure = Math.Max(0, total - done);
+                result.Cancelled += remainingAfterHealthFailure;
+                warning = "Import aborted after artifact failure because TIA session health could not be checked. " +
+                          "Remaining artifacts not attempted: " + remainingAfterHealthFailure + ".";
+                result.Warnings.Add(warning);
+                return true;
+            }
+
+            AddExceptionData(exception, "SessionHealthAfterFailure", health.ToDiagnosticString());
+            if (health.IsHealthy) {
+                return false;
+            }
+
+            var remaining = Math.Max(0, total - done);
+            result.Cancelled += remaining;
+            warning = "Import aborted after artifact failure because the TIA session is no longer healthy. " +
+                      "Health=" + health.ToDiagnosticString() +
+                      ". Remaining artifacts not attempted: " + remaining + ".";
+            result.Warnings.Add(warning);
+            return true;
         }
     }
 }

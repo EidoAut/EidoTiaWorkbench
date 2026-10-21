@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ThemePalette.cs
+// Stores a resolved set of UI colors so controls can be rethemed in place.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 
 namespace EidoTiaWorkbench.Theme {
@@ -10,6 +16,26 @@ namespace EidoTiaWorkbench.Theme {
         /// <summary>
         /// Initializes a new instance of the <see cref="ThemePalette"/> class.
         /// </summary>
+        /// <param name="background">Resolved application background color.</param>
+        /// <param name="surface">Resolved base content surface color.</param>
+        /// <param name="surfaceSecondary">Resolved secondary content surface color.</param>
+        /// <param name="inputSurface">Resolved input background color.</param>
+        /// <param name="border">Resolved subtle border color.</param>
+        /// <param name="borderStrong">Resolved emphasized border color.</param>
+        /// <param name="primary">Resolved primary action accent color.</param>
+        /// <param name="primaryHover">Resolved hovered action accent color.</param>
+        /// <param name="onPrimary">Resolved text on primary actions color.</param>
+        /// <param name="textPrimary">Resolved main text color.</param>
+        /// <param name="textSecondary">Resolved supporting text color.</param>
+        /// <param name="success">Resolved success state color.</param>
+        /// <param name="warning">Resolved warning state color.</param>
+        /// <param name="warningSurface">Resolved warning background color.</param>
+        /// <param name="error">Resolved error state color.</param>
+        /// <param name="info">Resolved informational state color.</param>
+        /// <param name="disabled">Resolved disabled text color.</param>
+        /// <param name="sidebar">Resolved navigation background color.</param>
+        /// <param name="sidebarHover">Resolved navigation hover background color.</param>
+        /// <param name="operationSurface">Resolved selected operation background color.</param>
         public ThemePalette(
             Color background,
             Color surface,

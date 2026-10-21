@@ -1,5 +1,11 @@
 ﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// AssemblyInfo.cs
+// Declares assembly identity and interoperability metadata.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;

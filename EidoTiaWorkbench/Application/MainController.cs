@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// MainController.cs
+// Coordinates UI commands, Core services, state and operational logging.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EidoTiaWorkbench.Core.Export;
 using EidoTiaWorkbench.Core.Import;
+using EidoTiaWorkbench.Core.Integration;
 using EidoTiaWorkbench.Core.Inventory;
 using EidoTiaWorkbench.Core.Model;
 using EidoTiaWorkbench.Core.Openness;
@@ -21,17 +28,12 @@ namespace EidoTiaWorkbench.Application {
     public sealed class MainController : IDisposable {
         private readonly ApplicationState _state;
         private readonly SynchronizationContext _uiContext;
-        private readonly StaWorker _sta;
-        private readonly TiaSessionService _session;
-        private readonly PlcInventoryService _inventory;
-        private readonly HmiInventoryService _hmiInventory;
         private readonly ManifestService _manifest;
         private readonly RepositoryInventoryService _repositoryInventory;
-        private readonly ExportService _export;
-        private readonly ImportService _import;
         private readonly ImportDependencyPlanner _importPlanner;
         private readonly ImportPreflightValidator _importValidator;
         private readonly ILogger _logger;
+        private IOpennessAdapter _session;
         private CancellationTokenSource _currentCancellation;
         private bool _disposed;
 
@@ -51,15 +53,18 @@ namespace EidoTiaWorkbench.Application {
                 "app.log");
 
             this._logger = new UiLogger(this._state, new FileLogger(this.LogFilePath), this._uiContext);
-            this._sta = new StaWorker();
-            this._session = new TiaSessionService(this._sta, this._logger);
-            this._inventory = new PlcInventoryService(this._session);
-            this._hmiInventory = new HmiInventoryService(this._session);
-            var xmlNormalize = new XmlNormalizeService();
             this._manifest = new ManifestService();
             this._repositoryInventory = new RepositoryInventoryService(this._manifest);
-            this._export = new ExportService(this._session, xmlNormalize, this._manifest, this._logger);
-            this._import = new ImportService(this._session, this._logger);
+            try {
+                this.IntegrationSettings = IntegrationSettings.Load();
+            }
+            catch (Exception ex) when (ex is IOException || ex is System.Runtime.Serialization.SerializationException || ex is System.Xml.XmlException) {
+                this.IntegrationSettings = new IntegrationSettings();
+                this._logger.Warn("Integration settings could not be loaded: " + ex.Message);
+            }
+
+            this.RefreshInstallations();
+            this._session = new OpennessWorkerClient(this.SelectedInstallation, this._logger);
             this._importPlanner = new ImportDependencyPlanner();
             this._importValidator = new ImportPreflightValidator();
 
@@ -68,6 +73,24 @@ namespace EidoTiaWorkbench.Application {
             this.Log(ActivitySeverity.Info, "Startup", string.Empty, string.Empty, "Application ready.");
         }
 
+        /// <summary>Gets the persisted runtime selection edited by Settings.</summary>
+        public IntegrationSettings IntegrationSettings {
+            get; private set;
+        }
+
+        /// <summary>Gets the most recently discovered installation candidates.</summary>
+        public List<OpennessInstallation> Installations {
+            get; private set;
+        }
+
+        /// <summary>Gets the usable API candidate selected for this controller.</summary>
+        public OpennessInstallation SelectedInstallation {
+            get; private set;
+        }
+
+        /// <summary>Gets a value indicating whether engineering commands can use an adapter.</summary>
+        public bool CanUseOpenness => this.SelectedInstallation != null;
+
         /// <summary>
         /// Gets the full path of the application log file.
         /// </summary>
@@ -75,24 +98,56 @@ namespace EidoTiaWorkbench.Application {
             get;
         }
 
+        /// <summary>Refreshes installation evidence without loading Siemens assemblies.</summary>
+        public void RefreshInstallations() {
+            this.Installations = new OpennessDiscovery().Discover(this.IntegrationSettings.CustomPath);
+            this.SelectedInstallation = this.IntegrationSettings.Select(this.Installations);
+            this._state.HasOpennessAdapter = this.SelectedInstallation != null;
+            this._state.IntegrationVersion = this.SelectedInstallation == null ? "Offline" : "TIA V" + this.SelectedInstallation.MajorVersion;
+        }
+
+        /// <summary>Switches only while disconnected and idle, replacing the entire worker process.</summary>
+        /// <param name="apiPath">Manual API directory, or null for automatic selection.</param>
+        /// <param name="customPath">Additional discovery directory supplied by the user.</param>
+        public void ApplyIntegrationSettings(string apiPath, string customPath) {
+            if (this._state.CurrentOperation.IsBusy || this._session.IsPortalOpen) {
+                throw new InvalidOperationException("Disconnect TIA Portal and wait for the current operation before switching API versions.");
+            }
+
+            var settings = new IntegrationSettings { SelectedApiPath = apiPath, CustomPath = customPath };
+            var installations = new OpennessDiscovery().Discover(customPath);
+            var selected = settings.Select(installations);
+            settings.Save();
+            this._session.Dispose();
+            this.IntegrationSettings = settings;
+            this.Installations = installations;
+            this.SelectedInstallation = selected;
+            this._state.HasOpennessAdapter = selected != null;
+            this._state.IntegrationVersion = selected == null ? "Offline" : "TIA V" + selected.MajorVersion;
+            this._session = new OpennessWorkerClient(this.SelectedInstallation, this._logger);
+            this._state.SetPortalInstances(new List<TiaPortalInstanceInfo>());
+            this._state.SetLastScan(new List<ExportItem>());
+            this._state.ActiveProject = null;
+            this.Log(
+                ActivitySeverity.Info,
+                "Integration",
+                string.Empty,
+                string.Empty,
+                this.SelectedInstallation == null ? "Offline mode: no usable adapter selected." : this.SelectedInstallation.ToString());
+        }
+
         /// <summary>
         /// Refreshes the list of running TIA Portal instances available for attachment.
         /// </summary>
         /// <returns>A task that completes when the state has been updated.</returns>
         public async Task RefreshPortalInstancesAsync() {
-            var instances = await this._session.GetRunningPortalInstancesAsync();
-            this._state.SetPortalInstances(instances);
-
-            var message = instances.Count == 0
-                ? "No running TIA Portal instances detected."
-                : "Detected " + instances.Count + " running TIA Portal instance(s).";
-
-            this.Log(
-                ActivitySeverity.Info,
-                "Project",
-                string.Empty,
-                string.Empty,
-                message);
+            await this.RunOperationAsync(
+                OperationState.Connecting,
+                "Discover TIA processes",
+                async () => {
+                    await this.RefreshPortalInstancesCoreAsync();
+                    return new OperationSummary { Operation = "Discover TIA processes", Ok = 1 };
+                });
         }
 
         /// <summary>
@@ -104,27 +159,30 @@ namespace EidoTiaWorkbench.Application {
         /// Thrown when no instance is available or multiple instances require an explicit selection.
         /// </exception>
         public async Task AttachToPortalAsync(int? instanceIndex) {
-            await this.RunOperationAsync(OperationState.Connecting, "Attach to TIA Portal", async () => {
-                this.UpdateOperationProgress(OperationState.Connecting, "Connecting to TIA Portal...", 0, 0, isIndeterminate: true);
-                if (!instanceIndex.HasValue) {
-                    await this.RefreshPortalInstancesAsync();
-                    if (this._state.PortalInstances.Count > 1) {
-                        throw new InvalidOperationException(
-                            "Multiple TIA Portal instances are running. Select one explicitly in Project view.");
+            await this.RunOperationAsync(
+                OperationState.Connecting,
+                "Attach to TIA Portal",
+                async () => {
+                    this.UpdateOperationProgress(OperationState.Connecting, "Connecting to TIA Portal...", 0, 0, isIndeterminate: true);
+                    if (!instanceIndex.HasValue) {
+                        await this.RefreshPortalInstancesCoreAsync();
+                        if (this._state.PortalInstances.Count > 1) {
+                            throw new InvalidOperationException(
+                                "Multiple TIA Portal instances are running. Select one explicitly in Project view.");
+                        }
+
+                        if (this._state.PortalInstances.Count == 0) {
+                            throw new InvalidOperationException("No running TIA Portal instance was detected.");
+                        }
+
+                        instanceIndex = this._state.PortalInstances[0].InstanceIndex;
                     }
 
-                    if (this._state.PortalInstances.Count == 0) {
-                        throw new InvalidOperationException("No running TIA Portal instance was detected.");
-                    }
-
-                    instanceIndex = this._state.PortalInstances[0].InstanceIndex;
-                }
-
-                await this._session.AttachToRunningPortalAsync(instanceIndex.Value);
-                await this.RefreshSessionStateAsync();
-                this.Log(ActivitySeverity.Success, "Project", string.Empty, string.Empty, "Attached to TIA Portal.");
-                return new OperationSummary { Operation = "Attach to TIA Portal", Ok = 1 };
-            });
+                    await this._session.AttachToRunningPortalAsync(instanceIndex.Value);
+                    await this.RefreshSessionStateAsync();
+                    this.Log(ActivitySeverity.Success, "Project", string.Empty, string.Empty, "Attached to TIA Portal.");
+                    return new OperationSummary { Operation = "Attach to TIA Portal", Ok = 1 };
+                });
         }
 
         /// <summary>
@@ -133,13 +191,16 @@ namespace EidoTiaWorkbench.Application {
         /// <param name="withUserInterface">Whether the new TIA Portal process should display its UI.</param>
         /// <returns>A task that completes when the session state has been refreshed.</returns>
         public async Task StartPortalAsync(bool withUserInterface) {
-            await this.RunOperationAsync(OperationState.Connecting, "Start TIA Portal", async () => {
-                this.UpdateOperationProgress(OperationState.Connecting, "Starting TIA Portal...", 0, 0, isIndeterminate: true);
-                await this._session.StartPortalAsync(withUserInterface);
-                await this.RefreshSessionStateAsync();
-                this.Log(ActivitySeverity.Success, "Project", string.Empty, string.Empty, "Started a new TIA Portal instance.");
-                return new OperationSummary { Operation = "Start TIA Portal", Ok = 1 };
-            });
+            await this.RunOperationAsync(
+                OperationState.Connecting,
+                "Start TIA Portal",
+                async () => {
+                    this.UpdateOperationProgress(OperationState.Connecting, "Starting TIA Portal...", 0, 0, isIndeterminate: true);
+                    await this._session.StartPortalAsync(withUserInterface);
+                    await this.RefreshSessionStateAsync();
+                    this.Log(ActivitySeverity.Success, "Project", string.Empty, string.Empty, "Started a new TIA Portal instance.");
+                    return new OperationSummary { Operation = "Start TIA Portal", Ok = 1 };
+                });
         }
 
         /// <summary>
@@ -153,17 +214,20 @@ namespace EidoTiaWorkbench.Application {
                 throw new ArgumentException("Project path is required.", nameof(projectPath));
             }
 
-            await this.RunOperationAsync(OperationState.OpeningProject, "Open project", async () => {
-                this.UpdateOperationProgress(OperationState.OpeningProject, "Opening project...", 0, 0, isIndeterminate: true);
-                if (!this._session.IsPortalOpen) {
-                    await this._session.StartPortalAsync(withUserInterface: true);
-                }
+            await this.RunOperationAsync(
+                OperationState.OpeningProject,
+                "Open project",
+                async () => {
+                    this.UpdateOperationProgress(OperationState.OpeningProject, "Opening project...", 0, 0, isIndeterminate: true);
+                    if (!this._session.IsPortalOpen) {
+                        await this._session.StartPortalAsync(withUserInterface: true);
+                    }
 
-                await this._session.OpenProjectAsync(projectPath);
-                await this.RefreshSessionStateAsync();
-                this.Log(ActivitySeverity.Success, "Project", string.Empty, projectPath, "Project opened.");
-                return new OperationSummary { Operation = "Open project", Ok = 1 };
-            });
+                    await this._session.OpenProjectAsync(projectPath);
+                    await this.RefreshSessionStateAsync();
+                    this.Log(ActivitySeverity.Success, "Project", string.Empty, projectPath, "Project opened.");
+                    return new OperationSummary { Operation = "Open project", Ok = 1 };
+                });
         }
 
         /// <summary>
@@ -172,13 +236,16 @@ namespace EidoTiaWorkbench.Application {
         /// <param name="closeOwnedPortal">Whether an owned TIA Portal process should be closed.</param>
         /// <returns>A task that completes when the session state has been refreshed.</returns>
         public async Task DisconnectAsync(bool closeOwnedPortal) {
-            await this.RunOperationAsync(OperationState.Connecting, "Disconnect", async () => {
-                this.UpdateOperationProgress(OperationState.Connecting, "Disconnecting from TIA Portal...", 0, 0, isIndeterminate: true);
-                await this._session.DisconnectAsync(closeOwnedPortal);
-                await this.RefreshSessionStateAsync();
-                this.Log(ActivitySeverity.Info, "Project", string.Empty, string.Empty, "Disconnected from TIA Portal.");
-                return new OperationSummary { Operation = "Disconnect", Ok = 1 };
-            });
+            await this.RunOperationAsync(
+                OperationState.Connecting,
+                "Disconnect",
+                async () => {
+                    this.UpdateOperationProgress(OperationState.Connecting, "Disconnecting from TIA Portal...", 0, 0, isIndeterminate: true);
+                    await this._session.DisconnectAsync(closeOwnedPortal);
+                    await this.RefreshSessionStateAsync();
+                    this.Log(ActivitySeverity.Info, "Project", string.Empty, string.Empty, "Disconnected from TIA Portal.");
+                    return new OperationSummary { Operation = "Disconnect", Ok = 1 };
+                });
         }
 
         /// <summary>
@@ -188,30 +255,29 @@ namespace EidoTiaWorkbench.Application {
         /// <param name="includeDbs">Whether data blocks should be included in the scan result.</param>
         /// <returns>A task that completes when scan state and project target lists have been updated.</returns>
         public async Task ScanProjectAsync(ExportProfile profile, bool includeDbs) {
-            await this.RunOperationAsync(OperationState.LoadingInventory, "Scan project", async () => {
-                this.UpdateOperationProgress(OperationState.LoadingInventory, "Reading inventory...", 0, 0, isIndeterminate: true);
-                this._state.ScanState = ScanState.Scanning;
-                var items = await this._sta.InvokeAsync(() => {
-                    var scanned = new List<ExportItem>();
-                    scanned.AddRange(this._inventory.ScanExportables(profile, includeDbs));
-                    scanned.AddRange(this._hmiInventory.ScanScreens());
-                    return scanned;
+            await this.RunOperationAsync(
+                OperationState.LoadingInventory,
+                "Scan project",
+                async () => {
+                    this.UpdateOperationProgress(OperationState.LoadingInventory, "Reading inventory...", 0, 0, isIndeterminate: true);
+                    this._state.ScanState = ScanState.Scanning;
+                    var response = await Task.Run(() => this._session.Execute(new WorkerMessage { Command = "Scan", Profile = profile, Flag = includeDbs }, CancellationToken.None));
+                    var items = response.Items;
+                    this._state.SetLastScan(items);
+                    this._state.ScanState = ScanState.Ready;
+
+                    var project = this._state.ActiveProject;
+                    if (project != null) {
+                        project.PlcTargets.Clear();
+                        project.HmiTargets.Clear();
+                        project.PlcTargets.AddRange(items.Where(i => i.IsPlc).Select(i => i.CpuPath).Distinct(StringComparer.OrdinalIgnoreCase));
+                        project.HmiTargets.AddRange(items.Where(i => i.IsHmi).Select(i => i.CpuPath).Distinct(StringComparer.OrdinalIgnoreCase));
+                        this._state.ActiveProject = project;
+                    }
+
+                    this.Log(ActivitySeverity.Success, "Scan", string.Empty, string.Empty, "Scan complete: " + items.Count + " artifact(s).");
+                    return new OperationSummary { Operation = "Scan project", Ok = items.Count };
                 });
-                this._state.SetLastScan(items);
-                this._state.ScanState = ScanState.Ready;
-
-                var project = this._state.ActiveProject;
-                if (project != null) {
-                    project.PlcTargets.Clear();
-                    project.HmiTargets.Clear();
-                    project.PlcTargets.AddRange(items.Where(i => i.IsPlc).Select(i => i.CpuPath).Distinct(StringComparer.OrdinalIgnoreCase));
-                    project.HmiTargets.AddRange(items.Where(i => i.IsHmi).Select(i => i.CpuPath).Distinct(StringComparer.OrdinalIgnoreCase));
-                    this._state.ActiveProject = project;
-                }
-
-                this.Log(ActivitySeverity.Success, "Scan", string.Empty, string.Empty, "Scan complete: " + items.Count + " artifact(s).");
-                return new OperationSummary { Operation = "Scan project", Ok = items.Count };
-            });
         }
 
         /// <summary>
@@ -290,15 +356,18 @@ namespace EidoTiaWorkbench.Application {
                 throw new InvalidOperationException("The previous manifest does not contain retryable artifacts from the current scan.");
             }
 
-            await this.RunCancellableOperationAsync(OperationState.Exporting, "Retry incomplete export", async token => {
-                return await this.ExportInternalAsync(
-                    retryItems,
-                    normalizePlcXml,
-                    preserveHmiXml,
-                    incremental: true,
-                    operationName: "Retry incomplete export",
-                    cancellationToken: token);
-            });
+            await this.RunCancellableOperationAsync(
+                OperationState.Exporting,
+                "Retry incomplete export",
+                async token => {
+                    return await this.ExportInternalAsync(
+                        retryItems,
+                        normalizePlcXml,
+                        preserveHmiXml,
+                        incremental: true,
+                        operationName: "Retry incomplete export",
+                        cancellationToken: token);
+                });
         }
 
         /// <summary>
@@ -320,23 +389,26 @@ namespace EidoTiaWorkbench.Application {
                 throw new ArgumentException("Workspace path is required.", nameof(repositoryPath));
             }
 
-            await this.RunOperationAsync(OperationState.LoadingRepository, "Load workspace", async () => {
-                this.UpdateOperationProgress(OperationState.LoadingRepository, "Loading workspace...", 0, 0, isIndeterminate: true);
-                this._state.SelectedRepository = repositoryPath;
-                var artifacts = await Task.Run(() => this._repositoryInventory.Scan(repositoryPath));
-                this._state.SetRepositoryInventory(artifacts);
-                this.Log(
-                    ActivitySeverity.Info,
-                    "Import",
-                    string.Empty,
-                    repositoryPath,
-                    "Workspace inventory loaded: " + artifacts.Count + " artifact(s).");
-                return new OperationSummary {
-                    Operation = "Load workspace",
-                    Ok = artifacts.Count,
-                    Status = "Completed",
-                };
-            });
+            await this.RunOperationAsync(
+                OperationState.LoadingRepository,
+                "Load workspace",
+                async () => {
+                    this.UpdateOperationProgress(OperationState.LoadingRepository, "Loading workspace...", 0, 0, isIndeterminate: true);
+                    this._state.SelectedRepository = repositoryPath;
+                    var artifacts = await Task.Run(() => this._repositoryInventory.Scan(repositoryPath));
+                    this._state.SetRepositoryInventory(artifacts);
+                    this.Log(
+                        ActivitySeverity.Info,
+                        "Import",
+                        string.Empty,
+                        repositoryPath,
+                        "Workspace inventory loaded: " + artifacts.Count + " artifact(s).");
+                    return new OperationSummary {
+                        Operation = "Load workspace",
+                        Ok = artifacts.Count,
+                        Status = "Completed",
+                    };
+                });
         }
 
         /// <summary>
@@ -365,71 +437,77 @@ namespace EidoTiaWorkbench.Application {
                 throw new InvalidOperationException("Select at least one workspace artifact to import.");
             }
 
-            await this.RunCancellableOperationAsync(OperationState.Importing, "Import selected", async token => {
-                var selection = artifacts.ToList();
-                var backupRoot = Path.Combine(
-                    this._state.SelectedRepository,
-                    "meta",
-                    "import-backups",
-                    DateTime.Now.ToString("yyyyMMdd_HHmmss"));
-                this.UpdateOperationProgress(OperationState.Validating, "Validating import selection...", 0, selection.Count, isIndeterminate: false);
-                var plan = await Task.Run(() => this._importPlanner.Build(selection), token);
-                var preflight = await Task.Run(() => this._importValidator.Validate(selection, plan), token);
-                if (preflight.HasBlockingErrors) {
-                    var failedSummary = new OperationSummary {
+            await this.RunCancellableOperationAsync(
+                OperationState.Importing,
+                "Import selected",
+                async token => {
+                    var selection = artifacts.ToList();
+                    var backupRoot = Path.Combine(
+                        this._state.SelectedRepository,
+                        "meta",
+                        "import-backups",
+                        DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                    this.UpdateOperationProgress(OperationState.Validating, "Validating import selection...", 0, selection.Count, isIndeterminate: false);
+                    var plan = await Task.Run(() => this._importPlanner.Build(selection), token);
+                    var preflight = await Task.Run(() => this._importValidator.Validate(selection, plan), token);
+                    if (preflight.HasBlockingErrors) {
+                        var failedSummary = new OperationSummary {
+                            Operation = "Import selected",
+                            Status = "Preflight failed",
+                            Warnings = preflight.WarningCount,
+                            Errors = preflight.ErrorCount,
+                            ConflictPolicy = conflictPolicy.ToString(),
+                            BackupPath = "No backup created because import did not start.",
+                        };
+                        AddPreflightMessages(failedSummary, preflight);
+                        AddImportPlanMessages(failedSummary, plan);
+                        this.Log(ActivitySeverity.Error, "Import", string.Empty, this._state.SelectedRepository, BuildResultText(failedSummary));
+                        return failedSummary;
+                    }
+
+                    this.UpdateOperationProgress(OperationState.Importing, "Importing artifacts...", 0, plan.OrderedArtifacts.Count, isIndeterminate: false);
+                    var result = (await Task.Run(() => this._session.Execute(
+                        new WorkerMessage {
+                            Command = "Import",
+                            Artifacts = plan.OrderedArtifacts.ToList(),
+                            Policy = conflictPolicy,
+                            Flag = createBackup,
+                            Path = backupRoot,
+                        },
+                        token,
+                        message => this.UpdateImportProgress(message.Progress)))).Import;
+
+                    var summary = new OperationSummary {
                         Operation = "Import selected",
-                        Status = "Preflight failed",
-                        Warnings = preflight.WarningCount,
-                        Errors = preflight.ErrorCount,
+                        Ok = result.Imported,
+                        Skipped = result.Skipped,
+                        Cancelled = result.Cancelled,
+                        Warnings = result.Warnings.Count + preflight.WarningCount,
+                        Errors = result.Errors.Count + preflight.ErrorCount,
                         ConflictPolicy = conflictPolicy.ToString(),
-                        BackupPath = "No backup created because import did not start.",
+                        BackupPath = result.BackupRoot ?? "Not used",
                     };
-                    AddPreflightMessages(failedSummary, preflight);
-                    AddImportPlanMessages(failedSummary, plan);
-                    this.Log(ActivitySeverity.Error, "Import", string.Empty, this._state.SelectedRepository, BuildResultText(failedSummary));
-                    return failedSummary;
-                }
 
-                this.UpdateOperationProgress(OperationState.Importing, "Importing artifacts...", 0, plan.OrderedArtifacts.Count, isIndeterminate: false);
-                var result = await this._sta.InvokeAsync(() => this._import.ImportFiles(
-                    plan.OrderedArtifacts,
-                    conflictPolicy,
-                    createBackup,
-                    backupRoot,
-                    token,
-                    this.UpdateImportProgress), token);
+                    AddPreflightMessages(summary, preflight);
+                    AddImportPlanMessages(summary, plan);
 
-                var summary = new OperationSummary {
-                    Operation = "Import selected",
-                    Ok = result.Imported,
-                    Skipped = result.Skipped,
-                    Cancelled = result.Cancelled,
-                    Warnings = result.Warnings.Count + preflight.WarningCount,
-                    Errors = result.Errors.Count + preflight.ErrorCount,
-                    ConflictPolicy = conflictPolicy.ToString(),
-                    BackupPath = result.BackupRoot ?? "Not used",
-                };
+                    foreach (var warning in result.Warnings) {
+                        summary.Messages.Add("Warning: " + warning);
+                    }
 
-                AddPreflightMessages(summary, preflight);
-                AddImportPlanMessages(summary, plan);
+                    foreach (var error in result.Errors) {
+                        summary.Messages.Add("Error: " + error);
+                    }
 
-                foreach (var warning in result.Warnings) {
-                    summary.Messages.Add("Warning: " + warning);
-                }
+                    this._state.LastImport = DateTime.Now.ToString("g");
+                    this._state.LastOperationResult = BuildResultText(summary);
 
-                foreach (var error in result.Errors) {
-                    summary.Messages.Add("Error: " + error);
-                }
-
-                this._state.LastImport = DateTime.Now.ToString("g");
-                this._state.LastOperationResult = BuildResultText(summary);
-
-                var severity = result.Errors.Count > 0
-                    ? ActivitySeverity.Error
-                    : result.Warnings.Count > 0 ? ActivitySeverity.Warning : ActivitySeverity.Success;
-                this.Log(severity, "Import", string.Empty, this._state.SelectedRepository, BuildResultText(summary));
-                return summary;
-            });
+                    var severity = result.Errors.Count > 0
+                        ? ActivitySeverity.Error
+                        : result.Warnings.Count > 0 ? ActivitySeverity.Warning : ActivitySeverity.Success;
+                    this.Log(severity, "Import", string.Empty, this._state.SelectedRepository, BuildResultText(summary));
+                    return summary;
+                });
         }
 
         /// <summary>
@@ -446,49 +524,58 @@ namespace EidoTiaWorkbench.Application {
                 throw new InvalidOperationException("Select at least one workspace artifact to import.");
             }
 
-            return await this.RunOperationAsync(OperationState.Validating, "Dry run", async () => {
-                var selection = artifacts.ToList();
-                this.UpdateOperationProgress(OperationState.Validating, "Validating workspace artifacts...", 0, selection.Count, isIndeterminate: false);
-                var plan = await Task.Run(() => this._importPlanner.Build(selection));
-                var preflight = await Task.Run(() => this._importValidator.Validate(selection, plan));
-                ImportResult result;
-                if (preflight.HasBlockingErrors) {
-                    result = new ImportResult();
-                } else {
-                    this.UpdateOperationProgress(OperationState.Comparing, "Simulating import actions...", 0, plan.OrderedArtifacts.Count, isIndeterminate: false);
-                    result = await this._sta.InvokeAsync(() => this._import.PreviewFiles(plan.OrderedArtifacts, conflictPolicy));
-                }
+            return await this.RunOperationAsync(
+                OperationState.Validating,
+                "Dry run",
+                async () => {
+                    var selection = artifacts.ToList();
+                    this.UpdateOperationProgress(OperationState.Validating, "Validating workspace artifacts...", 0, selection.Count, isIndeterminate: false);
+                    var plan = await Task.Run(() => this._importPlanner.Build(selection));
+                    var preflight = await Task.Run(() => this._importValidator.Validate(selection, plan));
+                    ImportResult result;
+                    if (preflight.HasBlockingErrors) {
+                        result = new ImportResult();
+                    }
+                    else {
+                        this.UpdateOperationProgress(OperationState.Comparing, "Simulating import actions...", 0, plan.OrderedArtifacts.Count, isIndeterminate: false);
+                        result = this.CanUseOpenness && this._session.IsPortalOpen
+                            ? (await Task.Run(() => this._session.Execute(new WorkerMessage { Command = "Preview", Artifacts = plan.OrderedArtifacts.ToList(), Policy = conflictPolicy }, CancellationToken.None))).Import
+                            : new ImportResult();
+                        if (!this._session.IsPortalOpen) {
+                            result.Warnings.Add("Offline validation only: target conflicts and Siemens import compatibility were not checked.");
+                        }
+                    }
 
-                var summary = new OperationSummary {
-                    Operation = "Dry run",
-                    SuccessLabel = "Simulated",
-                    Ok = result.Imported,
-                    Skipped = result.Skipped,
-                    Warnings = result.Warnings.Count + preflight.WarningCount,
-                    Errors = result.Errors.Count + preflight.ErrorCount,
-                    Status = preflight.HasBlockingErrors ? "Preflight failed" : "Dry run only",
-                    ConflictPolicy = conflictPolicy.ToString(),
-                    BackupPath = "No files are written during dry run.",
-                };
+                    var summary = new OperationSummary {
+                        Operation = "Dry run",
+                        SuccessLabel = "Simulated",
+                        Ok = result.Imported,
+                        Skipped = result.Skipped,
+                        Warnings = result.Warnings.Count + preflight.WarningCount,
+                        Errors = result.Errors.Count + preflight.ErrorCount,
+                        Status = preflight.HasBlockingErrors ? "Preflight failed" : "Dry run only",
+                        ConflictPolicy = conflictPolicy.ToString(),
+                        BackupPath = "No files are written during dry run.",
+                    };
 
-                summary.Messages.Add("Workspace validation: completed.");
-                summary.Messages.Add("Manifest validation: completed.");
-                summary.Messages.Add("XML validation: completed.");
-                summary.Messages.Add("Dependency validation: completed.");
-                summary.Messages.Add("Import simulation: Openness target lookup only; Siemens XML import compatibility is not verified until a real import runs.");
-                AddPreflightMessages(summary, preflight);
-                AddImportPlanMessages(summary, plan);
+                    summary.Messages.Add("Workspace validation: completed.");
+                    summary.Messages.Add("Manifest validation: completed.");
+                    summary.Messages.Add("XML validation: completed.");
+                    summary.Messages.Add("Dependency validation: completed.");
+                    summary.Messages.Add(this._session.IsPortalOpen ? "Import simulation: target lookup only; Siemens XML compatibility is not verified." : "Offline validation: no target lookup or engineering changes performed.");
+                    AddPreflightMessages(summary, preflight);
+                    AddImportPlanMessages(summary, plan);
 
-                foreach (var warning in result.Warnings) {
-                    summary.Messages.Add(warning);
-                }
+                    foreach (var warning in result.Warnings) {
+                        summary.Messages.Add(warning);
+                    }
 
-                foreach (var error in result.Errors) {
-                    summary.Messages.Add("Error: " + error);
-                }
+                    foreach (var error in result.Errors) {
+                        summary.Messages.Add("Error: " + error);
+                    }
 
-                return summary;
-            });
+                    return summary;
+                });
         }
 
         /// <summary>
@@ -545,7 +632,8 @@ namespace EidoTiaWorkbench.Application {
                 project.PlcTargets.AddRange(info.PlcTargets);
                 project.HmiTargets.AddRange(info.HmiTargets);
                 this._state.ActiveProject = project;
-            } else {
+            }
+            else {
                 this._state.ActiveProject = null;
             }
         }
@@ -560,7 +648,6 @@ namespace EidoTiaWorkbench.Application {
 
             this._disposed = true;
             this._session.Dispose();
-            this._sta.Dispose();
         }
 
         /// <summary>
@@ -651,6 +738,52 @@ namespace EidoTiaWorkbench.Application {
         }
 
         /// <summary>
+        /// Gets the first status text shown before an operation-specific phase is available.
+        /// </summary>
+        /// <param name="state">Operation phase.</param>
+        /// <returns>Human-readable status text.</returns>
+        private static string GetDefaultStatusText(OperationState state) {
+            switch (state) {
+                case OperationState.Connecting:
+                    return "Connecting to TIA Portal...";
+                case OperationState.OpeningProject:
+                    return "Opening project...";
+                case OperationState.LoadingRepository:
+                    return "Loading workspace...";
+                case OperationState.LoadingInventory:
+                    return "Reading inventory...";
+                case OperationState.Comparing:
+                    return "Comparing artifacts...";
+                case OperationState.Validating:
+                    return "Validating...";
+                case OperationState.Exporting:
+                    return "Exporting artifacts...";
+                case OperationState.Importing:
+                    return "Importing artifacts...";
+                case OperationState.BackingUp:
+                    return "Creating backup...";
+                default:
+                    return "Working...";
+            }
+        }
+
+        private async Task RefreshPortalInstancesCoreAsync() {
+            var instances = await this._session.GetRunningPortalInstancesAsync();
+            this._state.SetPortalInstances(instances);
+
+            var message = instances.Count == 0
+                ? "No running TIA Portal instances detected."
+                : "Detected " + instances.Count + " running TIA Portal instance(s).";
+
+            this.Log(
+                ActivitySeverity.Info,
+                "Project",
+                string.Empty,
+                string.Empty,
+                message);
+        }
+
+        /// <summary>
         /// Executes the shared export flow and converts Core results into an application summary.
         /// </summary>
         /// <param name="items">Artifacts to export.</param>
@@ -668,14 +801,22 @@ namespace EidoTiaWorkbench.Application {
             string operationName,
             CancellationToken cancellationToken) {
             var selection = items.ToList();
-            var result = await this._sta.InvokeAsync(() => this._export.Export(
-                this._state.SelectedRepository,
-                selection,
-                normalizePlcXml,
-                preserveHmiXml,
-                incremental,
-                (done, total, current, ex) => this.UpdateProgress(operationName, done, total, current, ex),
-                cancellationToken));
+            var result = (await Task.Run(() => this._session.Execute(
+                new WorkerMessage {
+                    Command = "Export",
+                    Path = this._state.SelectedRepository,
+                    Items = selection,
+                    Normalize = normalizePlcXml,
+                    PreserveHmi = preserveHmiXml,
+                    Incremental = incremental,
+                },
+                cancellationToken,
+                message => this.UpdateProgress(
+    operationName,
+    message.Progress.Done,
+    message.Progress.Total,
+    message.Items == null ? null : message.Items.FirstOrDefault(),
+    string.IsNullOrEmpty(message.Error) ? null : new InvalidOperationException(message.Error))))).Export;
 
             var summary = new OperationSummary {
                 Operation = operationName,
@@ -723,15 +864,18 @@ namespace EidoTiaWorkbench.Application {
             bool preserveHmiXml,
             bool incremental,
             string operationName) {
-            await this.RunCancellableOperationAsync(OperationState.Exporting, operationName, async token => {
-                return await this.ExportInternalAsync(
-                    items,
-                    normalizePlcXml,
-                    preserveHmiXml,
-                    incremental,
-                    operationName,
-                    token);
-            });
+            await this.RunCancellableOperationAsync(
+                OperationState.Exporting,
+                operationName,
+                async token => {
+                    return await this.ExportInternalAsync(
+                        items,
+                        normalizePlcXml,
+                        preserveHmiXml,
+                        incremental,
+                        operationName,
+                        token);
+                });
         }
 
         /// <summary>
@@ -806,7 +950,8 @@ namespace EidoTiaWorkbench.Application {
                 this._state.LastOperationResult = BuildResultText(summary);
                 this.Log(GetSummarySeverity(summary), operationName, string.Empty, string.Empty, "Finished in " + stopwatch.Elapsed + ". " + BuildResultText(summary));
                 return summary;
-            } catch (OperationCanceledException ex) {
+            }
+            catch (OperationCanceledException ex) {
                 stopwatch.Stop();
                 var summary = new OperationSummary {
                     Operation = operationName,
@@ -817,7 +962,8 @@ namespace EidoTiaWorkbench.Application {
                 this._state.LastOperationResult = BuildResultText(summary);
                 this.Log(ActivitySeverity.Warning, operationName, string.Empty, string.Empty, "Cancelled after " + stopwatch.Elapsed + ".", ex.ToString());
                 return summary;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 stopwatch.Stop();
                 this._state.LastOperationSummary = new OperationSummary {
                     Operation = operationName,
@@ -827,7 +973,8 @@ namespace EidoTiaWorkbench.Application {
                 this._state.PortalConnectionState = this._session.IsPortalOpen ? PortalConnectionState.Connected : PortalConnectionState.Error;
                 this.Log(ActivitySeverity.Error, operationName, string.Empty, string.Empty, ex.Message, ExceptionDiagnosticFormatter.Format(ex));
                 throw;
-            } finally {
+            }
+            finally {
                 if (this._currentCancellation != null) {
                     this._currentCancellation.Dispose();
                     this._currentCancellation = null;
@@ -931,36 +1078,6 @@ namespace EidoTiaWorkbench.Application {
         }
 
         /// <summary>
-        /// Gets the first status text shown before an operation-specific phase is available.
-        /// </summary>
-        /// <param name="state">Operation phase.</param>
-        /// <returns>Human-readable status text.</returns>
-        private static string GetDefaultStatusText(OperationState state) {
-            switch (state) {
-                case OperationState.Connecting:
-                    return "Connecting to TIA Portal...";
-                case OperationState.OpeningProject:
-                    return "Opening project...";
-                case OperationState.LoadingRepository:
-                    return "Loading workspace...";
-                case OperationState.LoadingInventory:
-                    return "Reading inventory...";
-                case OperationState.Comparing:
-                    return "Comparing artifacts...";
-                case OperationState.Validating:
-                    return "Validating...";
-                case OperationState.Exporting:
-                    return "Exporting artifacts...";
-                case OperationState.Importing:
-                    return "Importing artifacts...";
-                case OperationState.BackingUp:
-                    return "Creating backup...";
-                default:
-                    return "Working...";
-            }
-        }
-
-        /// <summary>
         /// Appends an activity entry to the application state.
         /// </summary>
         /// <param name="severity">Activity severity.</param>
@@ -994,7 +1111,8 @@ namespace EidoTiaWorkbench.Application {
         private void PostToUi(Action action) {
             if (this._uiContext != null) {
                 this._uiContext.Post(_ => action(), null);
-            } else {
+            }
+            else {
                 action();
             }
         }
@@ -1054,7 +1172,8 @@ namespace EidoTiaWorkbench.Application {
 
                 if (this._context != null) {
                     this._context.Post(_ => add(), null);
-                } else {
+                }
+                else {
                     add();
                 }
             }

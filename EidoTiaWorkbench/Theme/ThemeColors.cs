@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ThemeColors.cs
+// Provides the shared color palette used by the WinForms interface.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 
 namespace EidoTiaWorkbench.Theme {
@@ -14,183 +20,186 @@ namespace EidoTiaWorkbench.Theme {
             get; set;
         }
 
+        /// <summary>Gets muted text for supporting metadata on base surfaces.</summary>
+        public static Color TextMuted => UseDarkPalette ? Color.FromArgb(129, 147, 157) : Color.FromArgb(80, 99, 112);
+
         /// <summary>
-        /// Application window background color.
+        /// Gets the application window background color.
         /// </summary>
         public static Color Background {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x0B, 0x1F, 0x2E) : Color.FromArgb(0xF3, 0xF7, 0xFA);
+                return UseDarkPalette ? Color.FromArgb(0x00, 0x07, 0x0C) : Color.FromArgb(0xF3, 0xF7, 0xFA);
             }
         }
 
         /// <summary>
-        /// Primary surface color for panels and cards.
+        /// Gets the primary surface color for panels and cards.
         /// </summary>
         public static Color Surface {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x13, 0x2C, 0x3B) : Color.White;
+                return UseDarkPalette ? Color.FromArgb(0x00, 0x0C, 0x16) : Color.White;
             }
         }
 
         /// <summary>
-        /// Secondary surface color for headers and subtle bands.
+        /// Gets the secondary surface color for headers and subtle bands.
         /// </summary>
         public static Color SurfaceSecondary {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x18, 0x38, 0x4A) : Color.FromArgb(0xEA, 0xF3, 0xF6);
+                return UseDarkPalette ? Color.FromArgb(0x07, 0x13, 0x1D) : Color.FromArgb(0xEA, 0xF3, 0xF6);
             }
         }
 
         /// <summary>
-        /// Input field surface color.
+        /// Gets the input field surface color.
         /// </summary>
         public static Color InputSurface {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x0F, 0x2A, 0x3A) : Color.FromArgb(0xF5, 0xFA, 0xFC);
+                return UseDarkPalette ? Color.FromArgb(0x00, 0x0A, 0x12) : Color.FromArgb(0xF5, 0xFA, 0xFC);
             }
         }
 
         /// <summary>
-        /// Border color for separators and framed controls.
+        /// Gets the border color for separators and framed controls.
         /// </summary>
         public static Color Border {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x3F, 0x72, 0x8A) : Color.FromArgb(0xC8, 0xD8, 0xE0);
+                return UseDarkPalette ? Color.FromArgb(0x1A, 0x2A, 0x34) : Color.FromArgb(0xC8, 0xD8, 0xE0);
             }
         }
 
         /// <summary>
-        /// Strong border color for active technical chrome.
+        /// Gets the strong border color for active technical chrome.
         /// </summary>
         public static Color BorderStrong {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x67, 0xA9, 0xC4) : Color.FromArgb(0x86, 0xBF, 0xD0);
+                return UseDarkPalette ? Color.FromArgb(0x26, 0x39, 0x46) : Color.FromArgb(0x86, 0xBF, 0xD0);
             }
         }
 
         /// <summary>
-        /// Primary accent color for main actions.
+        /// Gets the primary accent color for main actions.
         /// </summary>
         public static Color Primary {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x6D, 0xCA, 0xE8) : Color.FromArgb(0x00, 0x7F, 0x9E);
+                return UseDarkPalette ? Color.FromArgb(0x60, 0xC0, 0xE0) : Color.FromArgb(0x00, 0x67, 0x7F);
             }
         }
 
         /// <summary>
-        /// Hover color for primary action controls.
+        /// Gets the hover color for primary action controls.
         /// </summary>
         public static Color PrimaryHover {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x94, 0xE6, 0xFF) : Color.FromArgb(0x00, 0x5F, 0x76);
+                return UseDarkPalette ? Color.FromArgb(0x80, 0xDC, 0xFF) : Color.FromArgb(0x00, 0x5F, 0x76);
             }
         }
 
         /// <summary>
-        /// Text color used on primary action backgrounds.
+        /// Gets the text color used on primary action backgrounds.
         /// </summary>
         public static Color OnPrimary {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x06, 0x20, 0x2C) : Color.White;
+                return UseDarkPalette ? Color.FromArgb(0x00, 0x07, 0x0C) : Color.White;
             }
         }
 
         /// <summary>
-        /// Main text color for high-priority content.
+        /// Gets the main text color for high-priority content.
         /// </summary>
         public static Color TextPrimary {
             get {
-                return UseDarkPalette ? Color.FromArgb(0xFA, 0xFD, 0xFF) : Color.FromArgb(0x0B, 0x17, 0x20);
+                return UseDarkPalette ? Color.FromArgb(0xEE, 0xF7, 0xFB) : Color.FromArgb(0x0B, 0x17, 0x20);
             }
         }
 
         /// <summary>
-        /// Muted text color for supporting content.
+        /// Gets the muted text color for supporting content.
         /// </summary>
         public static Color TextSecondary {
             get {
-                return UseDarkPalette ? Color.FromArgb(0xBC, 0xD0, 0xDD) : Color.FromArgb(0x52, 0x63, 0x71);
+                return UseDarkPalette ? Color.FromArgb(0xBA, 0xC8, 0xD1) : Color.FromArgb(0x52, 0x63, 0x71);
             }
         }
 
         /// <summary>
-        /// Success state color.
+        /// Gets the success state color.
         /// </summary>
         public static Color Success {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x58, 0xFF, 0x9E) : Color.FromArgb(0x15, 0x80, 0x3D);
+                return UseDarkPalette ? Color.FromArgb(0x37, 0xFF, 0x8B) : Color.FromArgb(0x12, 0x66, 0x2F);
             }
         }
 
         /// <summary>
-        /// Warning state color.
+        /// Gets the warning state color.
         /// </summary>
         public static Color Warning {
             get {
-                return UseDarkPalette ? Color.FromArgb(0xFF, 0xF0, 0x8A) : Color.FromArgb(0xB7, 0x79, 0x1F);
+                return UseDarkPalette ? Color.FromArgb(0xFF, 0xE6, 0x6B) : Color.FromArgb(0x80, 0x54, 0x14);
             }
         }
 
         /// <summary>
-        /// Warning banner background color.
+        /// Gets the warning banner background color.
         /// </summary>
         public static Color WarningSurface {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x44, 0x38, 0x17) : Color.FromArgb(0xFF, 0xF6, 0xD6);
+                return UseDarkPalette ? Color.FromArgb(0x35, 0x2D, 0x17) : Color.FromArgb(0xFF, 0xF6, 0xD6);
             }
         }
 
         /// <summary>
-        /// Error state color.
+        /// Gets the error state color.
         /// </summary>
         public static Color Error {
             get {
-                return UseDarkPalette ? Color.FromArgb(0xFF, 0x78, 0x90) : Color.FromArgb(0xC2, 0x41, 0x5A);
+                return UseDarkPalette ? Color.FromArgb(0xFF, 0x5E, 0x7A) : Color.FromArgb(0xAC, 0x29, 0x44);
             }
         }
 
         /// <summary>
-        /// Informational state color.
+        /// Gets the informational state color.
         /// </summary>
         public static Color Info {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x94, 0xE6, 0xFF) : Color.FromArgb(0x14, 0x7C, 0xA3);
+                return UseDarkPalette ? Color.FromArgb(0x80, 0xDC, 0xFF) : Color.FromArgb(0x00, 0x64, 0x81);
             }
         }
 
         /// <summary>
-        /// Disabled control color.
+        /// Gets the disabled control color.
         /// </summary>
         public static Color Disabled {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x8F, 0xA2, 0xB0) : Color.FromArgb(0x94, 0xA3, 0xB8);
+                return UseDarkPalette ? Color.FromArgb(0xAC, 0xBA, 0xC4) : Color.FromArgb(0x59, 0x68, 0x76);
             }
         }
 
         /// <summary>
-        /// Sidebar background color.
+        /// Gets the sidebar background color.
         /// </summary>
         public static Color Sidebar {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x08, 0x17, 0x25) : Color.FromArgb(0x00, 0x07, 0x0C);
+                return UseDarkPalette ? Color.FromArgb(0x00, 0x0A, 0x12) : Color.FromArgb(0xE7, 0xEF, 0xF3);
             }
         }
 
         /// <summary>
-        /// Sidebar item hover color.
+        /// Gets the sidebar item hover color.
         /// </summary>
         public static Color SidebarHover {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x12, 0x34, 0x4A) : Color.FromArgb(0x08, 0x23, 0x35);
+                return UseDarkPalette ? Color.FromArgb(0x0D, 0x20, 0x2C) : Color.FromArgb(0xD5, 0xE7, 0xEE);
             }
         }
 
         /// <summary>
-        /// Operation overlay background color.
+        /// Gets the operation overlay background color.
         /// </summary>
         public static Color OperationSurface {
             get {
-                return UseDarkPalette ? Color.FromArgb(0x16, 0x44, 0x57) : Color.FromArgb(0xE7, 0xF8, 0xFC);
+                return UseDarkPalette ? Color.FromArgb(0x0D, 0x20, 0x2C) : Color.FromArgb(0xE7, 0xF8, 0xFC);
             }
         }
 

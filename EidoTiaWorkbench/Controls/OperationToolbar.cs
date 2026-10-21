@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// OperationToolbar.cs
+// Provides a themed horizontal toolbar container for operation buttons.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Windows.Forms;
 using EidoTiaWorkbench.Theme;
 

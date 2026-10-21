@@ -13,9 +13,9 @@ dotnet_sort_system_directives_first = true
 csharp_using_directive_placement = outside_namespace
 
 csharp_new_line_before_open_brace = none
-csharp_new_line_before_else = false
-csharp_new_line_before_catch = false
-csharp_new_line_before_finally = false
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
 
 csharp_indent_case_contents = true
 csharp_indent_switch_labels = true
@@ -33,6 +33,9 @@ csharp_preserve_single_line_blocks = false
 
 # Project conventions require private fields to use a leading underscore.
 dotnet_diagnostic.SA1309.severity = none
+
+# EIDO uses K&R opening braces on the declaration or control statement line.
+dotnet_diagnostic.SA1500.severity = none
 
 [*.Designer.cs]
 generated_code = true

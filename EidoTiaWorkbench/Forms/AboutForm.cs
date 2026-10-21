@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// AboutForm.cs
+// Displays product, license, version, and corporate information.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -23,7 +29,7 @@ namespace EidoTiaWorkbench.Forms {
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.ClientSize = new Size(560, 360);
+            this.ClientSize = new Size(680, 440);
 
             var root = new TableLayoutPanel {
                 Dock = DockStyle.Fill,
@@ -72,13 +78,13 @@ namespace EidoTiaWorkbench.Forms {
             var title = new Label {
                 Text = ProductInfo.Name,
                 AutoSize = true,
-                Font = new Font("Segoe UI Semibold", 19F, FontStyle.Regular, GraphicsUnit.Point),
+                Font = ThemeFonts.PageTitle,
                 ForeColor = ThemeColors.TextPrimary,
                 Margin = new Padding(0, 0, 0, 12),
             };
             textPanel.Controls.Add(title, 0, 0);
             textPanel.Controls.Add(CreateLine("Version 0.1"), 0, 1);
-            textPanel.Controls.Add(CreateLine("TIA Portal V21"), 0, 2);
+            textPanel.Controls.Add(CreateLine("Isolated Openness adapters | V21 available"), 0, 2);
             textPanel.Controls.Add(CreateLine("MIT License"), 0, 3);
             textPanel.Controls.Add(CreateLine("Copyright © 2026 EIDO AUTOMATION, S.L.U."), 0, 4);
             textPanel.Controls.Add(CreateDescription(), 0, 5);
@@ -87,6 +93,7 @@ namespace EidoTiaWorkbench.Forms {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.RightToLeft,
                 AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 WrapContents = true,
                 Margin = new Padding(0, 18, 0, 0),
             };
@@ -100,6 +107,7 @@ namespace EidoTiaWorkbench.Forms {
             root.Controls.Add(textPanel, 1, 0);
             root.Controls.Add(buttons, 1, 1);
             this.Controls.Add(root);
+            AppTheme.ApplyThemeTree(this);
             this.AcceptButton = ok;
             this.CancelButton = ok;
         }
@@ -150,7 +158,8 @@ namespace EidoTiaWorkbench.Forms {
                     using (var image = Image.FromStream(stream)) {
                         return new Bitmap(image);
                     }
-                } catch {
+                }
+                catch {
                     // Fall back to a generated mark; About must never crash because branding media is missing.
                 }
             }

@@ -1,11 +1,17 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// AppTheme.cs
+// Applies shared visual styling to forms and common WinForms controls.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using Microsoft.Win32;
 using EidoTiaWorkbench.Controls;
+using Microsoft.Win32;
 
 namespace EidoTiaWorkbench.Theme {
     /// <summary>
@@ -15,7 +21,7 @@ namespace EidoTiaWorkbench.Theme {
         private const string SettingsDirectoryName = "EidoTiaWorkbench";
         private const string SettingsFileName = "theme.txt";
 
-        private static ThemePreference _currentPreference = ThemePreference.System;
+        private static ThemePreference _currentPreference = ThemePreference.Dark;
 
         /// <summary>
         /// Gets the currently selected theme preference.
@@ -30,7 +36,7 @@ namespace EidoTiaWorkbench.Theme {
         /// Loads the persisted theme preference and applies its effective palette.
         /// </summary>
         public static void LoadPreference() {
-            var preference = ThemePreference.System;
+            var preference = ThemePreference.Dark;
             try {
                 var path = GetSettingsFilePath();
                 if (File.Exists(path)) {
@@ -39,8 +45,9 @@ namespace EidoTiaWorkbench.Theme {
                         preference = parsed;
                     }
                 }
-            } catch {
-                preference = ThemePreference.System;
+            }
+            catch {
+                preference = ThemePreference.Dark;
             }
 
             SetPreference(preference);
@@ -54,7 +61,8 @@ namespace EidoTiaWorkbench.Theme {
                 var path = GetSettingsFilePath();
                 Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
                 File.WriteAllText(path, _currentPreference.ToString());
-            } catch {
+            }
+            catch {
                 // Theme persistence should never block the application.
             }
         }
@@ -125,6 +133,11 @@ namespace EidoTiaWorkbench.Theme {
         /// <param name="grid">Grid control to style.</param>
         public static void StyleGrid(DataGridView grid) {
             grid.BackgroundColor = ThemeColors.Surface;
+            grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+            grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            grid.ColumnHeadersHeight = (int)(40 * grid.DeviceDpi / 96F);
+            grid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
             grid.BorderStyle = BorderStyle.None;
             grid.EnableHeadersVisualStyles = false;
             grid.GridColor = ThemeColors.Border;
@@ -134,10 +147,18 @@ namespace EidoTiaWorkbench.Theme {
             grid.ColumnHeadersDefaultCellStyle.Font = ThemeFonts.SectionTitle;
             grid.DefaultCellStyle.BackColor = ThemeColors.Surface;
             grid.DefaultCellStyle.ForeColor = ThemeColors.TextPrimary;
-            grid.DefaultCellStyle.SelectionBackColor = ThemeColors.SurfaceSecondary;
+            grid.DefaultCellStyle.SelectionBackColor = ThemeColors.OperationSurface;
             grid.DefaultCellStyle.SelectionForeColor = ThemeColors.TextPrimary;
             grid.AlternatingRowsDefaultCellStyle.BackColor = ThemeColors.InputSurface;
             grid.AlternatingRowsDefaultCellStyle.ForeColor = ThemeColors.TextPrimary;
+            grid.RowHeadersDefaultCellStyle.BackColor = ThemeColors.SurfaceSecondary;
+            grid.RowHeadersDefaultCellStyle.ForeColor = ThemeColors.TextPrimary;
+            grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = ThemeColors.SurfaceSecondary;
+            grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = ThemeColors.TextPrimary;
+            grid.AlternatingRowsDefaultCellStyle.SelectionBackColor = ThemeColors.OperationSurface;
+            grid.AlternatingRowsDefaultCellStyle.SelectionForeColor = ThemeColors.TextPrimary;
+            grid.RowTemplate.Height = (int)(36 * grid.DeviceDpi / 96F);
+            grid.DefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
             grid.RowHeadersVisible = false;
             grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             grid.MultiSelect = false;
@@ -176,6 +197,15 @@ namespace EidoTiaWorkbench.Theme {
             list.ForeColor = ThemeColors.TextPrimary;
             list.BorderStyle = BorderStyle.None;
             list.Font = ThemeFonts.Body;
+            list.OwnerDraw = true;
+
+            // Re-theming must not accumulate paint handlers.
+            list.DrawColumnHeader -= DrawListHeader;
+            list.DrawColumnHeader += DrawListHeader;
+            list.DrawItem -= DrawListItem;
+            list.DrawItem += DrawListItem;
+            list.DrawSubItem -= DrawListSubItem;
+            list.DrawSubItem += DrawListSubItem;
         }
 
         /// <summary>
@@ -187,6 +217,13 @@ namespace EidoTiaWorkbench.Theme {
             tree.ForeColor = ThemeColors.TextPrimary;
             tree.LineColor = ThemeColors.BorderStrong;
             tree.Font = ThemeFonts.Body;
+            tree.ItemHeight = (int)(32 * tree.DeviceDpi / 96F);
+            tree.Indent = (int)(24 * tree.DeviceDpi / 96F);
+            tree.FullRowSelect = true;
+            tree.ShowLines = false;
+            tree.DrawMode = TreeViewDrawMode.OwnerDrawAll;
+            tree.DrawNode -= DrawTreeNode;
+            tree.DrawNode += DrawTreeNode;
             tree.BorderStyle = BorderStyle.None;
             StyleTreeNodes(tree.Nodes);
         }
@@ -212,6 +249,87 @@ namespace EidoTiaWorkbench.Theme {
             ApplyControlTheme(root, previous);
             foreach (Control child in root.Controls) {
                 ApplyThemeTree(child, previous);
+            }
+        }
+
+        private static void DrawTreeNode(object sender, DrawTreeNodeEventArgs e) {
+            var tree = (TreeView)sender;
+            var selected = tree.SelectedNode == e.Node;
+            var bounds = new Rectangle(e.Node.Bounds.Left, e.Bounds.Top, Math.Max(e.Node.Bounds.Width, tree.ClientSize.Width - e.Node.Bounds.Left), e.Bounds.Height);
+            using (var brush = new SolidBrush(selected ? ThemeColors.OperationSurface : ThemeColors.InputSurface)) {
+                e.Graphics.FillRectangle(brush, 0, e.Bounds.Top, tree.ClientSize.Width, e.Bounds.Height);
+            }
+
+            var iconSize = tree.ImageList?.ImageSize.Width ?? 16;
+            var checkSize = ThemeMetrics.Scale(tree, 14);
+            var check = new Rectangle(bounds.Left - iconSize - checkSize - 6, bounds.Top + ((bounds.Height - checkSize) / 2), checkSize, checkSize);
+            if (tree.CheckBoxes) {
+                using (var brush = new SolidBrush(e.Node.Checked ? ThemeColors.Primary : ThemeColors.InputSurface))
+                using (var border = new Pen(ThemeColors.BorderStrong)) {
+                    e.Graphics.FillRectangle(brush, check);
+                    e.Graphics.DrawRectangle(border, check);
+                }
+
+                if (e.Node.Checked) {
+                    TextRenderer.DrawText(e.Graphics, "✓", tree.Font, check, ThemeColors.OnPrimary, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                }
+            }
+
+            if (e.Node.Nodes.Count > 0) {
+                var expander = new Rectangle(check.Left - ThemeMetrics.Scale(tree, 20), bounds.Top, ThemeMetrics.Scale(tree, 16), bounds.Height);
+                TextRenderer.DrawText(e.Graphics, e.Node.IsExpanded ? "⌄" : "›", tree.Font, expander, ThemeColors.TextSecondary, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            }
+
+            if (tree.ImageList != null && tree.ImageList.Images.ContainsKey(e.Node.ImageKey)) {
+                tree.ImageList.Draw(e.Graphics, bounds.Left - iconSize - 2, bounds.Top + ((bounds.Height - iconSize) / 2), tree.ImageList.Images.IndexOfKey(e.Node.ImageKey));
+            }
+
+            var item = e.Node.Tag as Core.Model.ExportItem;
+            var text = item == null || item.CanExport || item.CanImport ? ThemeColors.TextPrimary : ThemeColors.Disabled;
+            TextRenderer.DrawText(e.Graphics, e.Node.Text, tree.Font, bounds, text, TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            if (selected && tree.Focused) {
+                ControlPaint.DrawFocusRectangle(e.Graphics, bounds, ThemeColors.TextPrimary, ThemeColors.OperationSurface);
+            }
+        }
+
+        private static void DrawListHeader(object sender, DrawListViewColumnHeaderEventArgs e) {
+            using (var brush = new SolidBrush(ThemeColors.SurfaceSecondary)) {
+                e.Graphics.FillRectangle(brush, e.Bounds);
+            }
+
+            TextRenderer.DrawText(
+                e.Graphics,
+                e.Header.Text,
+                ((ListView)sender).Font,
+                Rectangle.Inflate(e.Bounds, -8, 0),
+                ThemeColors.TextPrimary,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            using (var pen = new Pen(ThemeColors.BorderStrong)) {
+                e.Graphics.DrawLine(pen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
+            }
+        }
+
+        private static void DrawListItem(object sender, DrawListViewItemEventArgs e) {
+            if (((ListView)sender).View != View.Details) {
+                e.DrawDefault = true;
+            }
+        }
+
+        private static void DrawListSubItem(object sender, DrawListViewSubItemEventArgs e) {
+            var background = e.Item.Selected ? ThemeColors.OperationSurface : ThemeColors.Surface;
+            using (var brush = new SolidBrush(background)) {
+                e.Graphics.FillRectangle(brush, e.Bounds);
+            }
+
+            TextRenderer.DrawText(
+                e.Graphics,
+                e.SubItem.Text,
+                ((ListView)sender).Font,
+                Rectangle.Inflate(e.Bounds, -8, 0),
+                ThemeColors.TextPrimary,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            if (e.ColumnIndex == 0 && e.Item.Focused && ((ListView)sender).Focused) {
+                e.DrawFocusRectangle(e.Item.Bounds);
             }
         }
 
@@ -247,7 +365,8 @@ namespace EidoTiaWorkbench.Theme {
                         return ((int)value) == 0;
                     }
                 }
-            } catch {
+            }
+            catch {
                 return false;
             }
 
@@ -261,6 +380,17 @@ namespace EidoTiaWorkbench.Theme {
         /// <param name="previous">Previous palette, or <see langword="null"/> when not switching themes.</param>
         private static void ApplyControlTheme(Control control, ThemePalette previous) {
             ReplacePaletteColors(control, previous);
+            if (control is TreeView || control is ListView || control is TextBox || control is DataGridView || (control is ScrollableControl && ((ScrollableControl)control).AutoScroll)) {
+                NativeControlTheme.Apply(control);
+            }
+
+            if (control.ForeColor == SystemColors.ControlText || control.ForeColor == Color.Black) {
+                control.ForeColor = ThemeColors.TextPrimary;
+            }
+
+            if (control.BackColor == SystemColors.Control || control.BackColor == SystemColors.Window) {
+                control.BackColor = ThemeColors.Surface;
+            }
 
             var form = control as Form;
             if (form != null) {
@@ -325,6 +455,11 @@ namespace EidoTiaWorkbench.Theme {
                 statusStrip.ForeColor = ThemeColors.TextSecondary;
                 foreach (ToolStripItem item in statusStrip.Items) {
                     item.ForeColor = ThemeColors.TextSecondary;
+                    var link = item as ToolStripStatusLabel;
+                    if (link != null && link.IsLink) {
+                        link.LinkColor = ThemeColors.Primary;
+                        link.ActiveLinkColor = ThemeColors.PrimaryHover;
+                    }
                 }
             }
         }

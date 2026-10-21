@@ -35,3 +35,7 @@ Run the offline test runner after a Debug build:
 ```
 
 Live TIA Portal validation should be recorded with the TIA Portal version, project type, selected artifacts, and any Siemens exception diagnostics.
+
+## Modernization
+
+Read [the corporate C# standard](docs/EIDO_CSharp_Programming_Style_Guide_v1.0.md) and [the architecture and compatibility matrix](docs/Modernization.md). Do not add Siemens references to Core or Desktop. Build and run OfflineTests without Siemens, and preserve explicit preview/import, backup and cancellation semantics.

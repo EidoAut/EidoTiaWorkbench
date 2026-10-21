@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportError.cs
+// Represents one failed import operation.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using EidoTiaWorkbench.Core.Model;
 
@@ -7,6 +13,7 @@ namespace EidoTiaWorkbench.Core.Import {
     /// <summary>
     /// Represents one failed import operation.
     /// </summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class ImportError {
         /// <summary>
         /// Initializes a new instance of the <see cref="ImportError"/> class.
@@ -21,15 +28,28 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <summary>
         /// Gets the artifact that failed to import.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public ExportItem Item {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the exception describing the import failure.
         /// </summary>
         public Exception Exception {
-            get;
+            get; private set;
+        }
+
+        /// <summary>Gets diagnostics for the worker boundary without serializing exception types.</summary>
+        [System.Runtime.Serialization.DataMember]
+        public string Diagnostic {
+            get {
+                return this.Exception == null ? string.Empty : this.Exception.ToString();
+            }
+
+            private set {
+                this.Exception = new InvalidOperationException(value);
+            }
         }
 
         /// <summary>

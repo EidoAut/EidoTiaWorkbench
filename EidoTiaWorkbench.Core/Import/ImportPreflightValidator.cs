@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportPreflightValidator.cs
+// Validates repository artifacts before any Siemens Openness import call is made.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -176,7 +182,8 @@ namespace EidoTiaWorkbench.Core.Import {
             XDocument document;
             try {
                 document = XDocument.Load(artifact.RepositoryPath, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
-            } catch (XmlException ex) {
+            }
+            catch (XmlException ex) {
                 result.Add(new ImportValidationIssue(
                     ImportValidationSeverity.Error,
                     "XML validation",

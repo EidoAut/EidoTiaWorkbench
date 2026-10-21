@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ToastNotification.cs
+// Displays a temporary floating notification inside a parent control.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Theme;
@@ -23,7 +29,7 @@ namespace EidoTiaWorkbench.Controls {
             this.TextAlign = ContentAlignment.MiddleLeft;
             this.Padding = new Padding(12, 0, 12, 0);
             this.BackColor = ThemeColors.TextPrimary;
-            this.ForeColor = Color.White;
+            this.ForeColor = ThemeColors.TextPrimary;
             this.Font = ThemeFonts.Body;
             this.Visible = false;
 

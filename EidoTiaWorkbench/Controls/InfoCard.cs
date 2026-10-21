@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// InfoCard.cs
+// Displays a compact title/value card with an optional status badge.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Theme;
@@ -18,7 +24,9 @@ namespace EidoTiaWorkbench.Controls {
         /// Initializes a new instance of the <see cref="InfoCard"/> class.
         /// </summary>
         public InfoCard() {
-            this.AutoSize = true;
+            this.DoubleBuffered = true;
+            this.AutoSize = false;
+            this.Height = 112;
             this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
             // Cards keep a compact readable minimum and grow with the responsive dashboard grid.
@@ -30,17 +38,19 @@ namespace EidoTiaWorkbench.Controls {
 
             var layout = new TableLayoutPanel {
                 Dock = DockStyle.Fill,
-                AutoSize = true,
+                AutoSize = false,
                 ColumnCount = 2,
                 RowCount = 2,
             };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
             this._title = new Label {
-                AutoSize = true,
+                AutoSize = false,
+                AutoEllipsis = true,
+                Dock = DockStyle.Fill,
                 Font = ThemeFonts.Secondary,
                 ForeColor = ThemeColors.TextSecondary,
             };
@@ -87,6 +97,23 @@ namespace EidoTiaWorkbench.Controls {
             this.SetContent(title, value);
             this._badge.SetStatus(badge, badgeColor);
             this._badge.Visible = true;
+        }
+
+        /// <inheritdoc />
+        protected override void OnPaint(PaintEventArgs e) {
+            base.OnPaint(e);
+            using (var pen = new Pen(ThemeColors.Border)) {
+                e.Graphics.DrawRectangle(pen, 0, 0, this.Width - 1, this.Height - 1);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                this._toolTip.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }

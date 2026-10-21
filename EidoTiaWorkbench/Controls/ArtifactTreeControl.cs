@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ArtifactTreeControl.cs
+// Displays exportable artifacts in a checkable hierarchy grouped by project, device, CPU, and category.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -16,6 +22,7 @@ namespace EidoTiaWorkbench.Controls {
         private readonly TreeView _tree;
         private Func<ExportItem, bool> _isItemSelectable = item => item != null && item.CanExport;
         private bool _suppressCheckEvents;
+        private int _iconPalette;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ArtifactTreeControl"/> class.
@@ -30,8 +37,7 @@ namespace EidoTiaWorkbench.Controls {
                 BorderStyle = BorderStyle.None,
                 HideSelection = false,
                 HotTracking = true,
-                ItemHeight = 24,
-                ImageList = BuildImageList(),
+                ItemHeight = 32,
                 Indent = 22,
                 ShowNodeToolTips = true,
             };
@@ -78,6 +84,16 @@ namespace EidoTiaWorkbench.Controls {
                 defaultCheckedKeys ?? this.GetCheckedItems().Select(i => i.LogicalKey),
                 StringComparer.OrdinalIgnoreCase);
 
+            var expanded = new HashSet<string>(StringComparer.Ordinal);
+            var selectedKey = this.SelectedItem?.LogicalKey;
+            foreach (TreeNode node in this._tree.Nodes) {
+                Walk(node, n => {
+                    if (n.IsExpanded) {
+                        expanded.Add(n.FullPath);
+                    }
+                });
+            }
+
             this._tree.BeginUpdate();
             this._suppressCheckEvents = true;
             try {
@@ -109,8 +125,18 @@ namespace EidoTiaWorkbench.Controls {
                 plcRoot.Expand();
                 hmiRoot.Expand();
                 this._tree.Nodes.Add(root);
+                Walk(root, n => {
+                    if (expanded.Contains(n.FullPath)) {
+                        n.Expand();
+                    }
+
+                    if (selectedKey != null && (n.Tag as ExportItem)?.LogicalKey == selectedKey) {
+                        this._tree.SelectedNode = n;
+                    }
+                });
                 AppTheme.StyleTree(this._tree);
-            } finally {
+            }
+            finally {
                 this._suppressCheckEvents = false;
                 this._tree.EndUpdate();
             }
@@ -131,7 +157,14 @@ namespace EidoTiaWorkbench.Controls {
         /// </summary>
         public void ApplyTheme() {
             this.BackColor = ThemeColors.InputSurface;
-            this._tree.ImageList = BuildImageList();
+            var palette = ThemeColors.Primary.ToArgb();
+            if (this._tree.ImageList == null || palette != this._iconPalette) {
+                var oldImages = this._tree.ImageList;
+                this._tree.ImageList = BuildImageList();
+                this._iconPalette = palette;
+                oldImages?.Dispose();
+            }
+
             AppTheme.StyleTree(this._tree);
         }
 
@@ -142,11 +175,13 @@ namespace EidoTiaWorkbench.Controls {
         public List<ExportItem> GetCheckedItems() {
             var result = new List<ExportItem>();
             foreach (TreeNode node in this._tree.Nodes) {
-                Walk(node, n => {
-                    if (n.Checked && n.Tag is ExportItem && this._isItemSelectable((ExportItem)n.Tag)) {
-                        result.Add((ExportItem)n.Tag);
-                    }
-                });
+                Walk(
+                    node,
+                    n => {
+                        if (n.Checked && n.Tag is ExportItem && this._isItemSelectable((ExportItem)n.Tag)) {
+                            result.Add((ExportItem)n.Tag);
+                        }
+                    });
             }
 
             return result;
@@ -159,9 +194,10 @@ namespace EidoTiaWorkbench.Controls {
             this._suppressCheckEvents = true;
             try {
                 foreach (TreeNode node in this._tree.Nodes) {
-                    SetCheckedRecursive(node, true);
+                    this.SetCheckedRecursive(node, true);
                 }
-            } finally {
+            }
+            finally {
                 this._suppressCheckEvents = false;
             }
 
@@ -175,13 +211,23 @@ namespace EidoTiaWorkbench.Controls {
             this._suppressCheckEvents = true;
             try {
                 foreach (TreeNode node in this._tree.Nodes) {
-                    SetCheckedRecursive(node, false);
+                    this.SetCheckedRecursive(node, false);
                 }
-            } finally {
+            }
+            finally {
                 this._suppressCheckEvents = false;
             }
 
             this.SelectionChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                this._tree.ImageList?.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -303,37 +349,6 @@ namespace EidoTiaWorkbench.Controls {
         }
 
         /// <summary>
-        /// Applies a checked state to a node and all descendants.
-        /// </summary>
-        /// <param name="node">Root node to update.</param>
-        /// <param name="value">Checked state to apply.</param>
-        private void SetCheckedRecursive(TreeNode node, bool value) {
-            node.Checked = value && IsNodeExportable(node);
-            foreach (TreeNode child in node.Nodes) {
-                SetCheckedRecursive(child, value);
-            }
-        }
-
-        /// <summary>
-        /// Determines whether a node can participate in export selection.
-        /// </summary>
-        /// <param name="node">Tree node to inspect.</param>
-        /// <returns><see langword="true"/> when the node or one of its descendants is exportable.</returns>
-        private bool IsNodeExportable(TreeNode node) {
-            if (node.Tag is ExportItem) {
-                return this._isItemSelectable((ExportItem)node.Tag);
-            }
-
-            foreach (TreeNode child in node.Nodes) {
-                if (IsNodeExportable(child)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Walks a node and all descendants depth-first.
         /// </summary>
         /// <param name="node">Root node to walk.</param>
@@ -370,6 +385,12 @@ namespace EidoTiaWorkbench.Controls {
         /// <returns>The icon image key.</returns>
         private static string GetKindIconKey(ExportKind kind) {
             switch (kind) {
+                case ExportKind.Fb:
+                    return "fb";
+                case ExportKind.Fc:
+                    return "fc";
+                case ExportKind.Ob:
+                    return "ob";
                 case ExportKind.Udt:
                     return "types";
                 case ExportKind.PlcTagTable:
@@ -389,19 +410,70 @@ namespace EidoTiaWorkbench.Controls {
         /// <returns>The configured image list.</returns>
         private static ImageList BuildImageList() {
             var list = new ImageList {
-                ImageSize = new Size(18, 18),
+                ImageSize = new Size(24, 24),
                 ColorDepth = ColorDepth.Depth32Bit,
             };
             list.Images.Add("project", IconProvider.Get("project", ThemeColors.TextSecondary));
             list.Images.Add("plc", IconProvider.Get("plc", ThemeColors.Primary));
             list.Images.Add("hmi", IconProvider.Get("hmi", ThemeColors.Info));
             list.Images.Add("folder", IconProvider.Get("project", ThemeColors.Warning));
-            list.Images.Add("types", IconProvider.Get("document", ThemeColors.Info));
+            list.Images.Add("types", CreateKindImage("DT", ThemeColors.Info));
+            list.Images.Add("fb", CreateKindImage("FB", ThemeColors.Primary));
+            list.Images.Add("fc", CreateKindImage("FC", ThemeColors.Info));
+            list.Images.Add("ob", CreateKindImage("OB", ThemeColors.TextSecondary));
             list.Images.Add("tag", IconProvider.Get("document", ThemeColors.Success));
-            list.Images.Add("db", IconProvider.Get("document", ThemeColors.Warning));
+            list.Images.Add("db", CreateKindImage("DB", ThemeColors.Warning));
             list.Images.Add("block", IconProvider.Get("document", ThemeColors.TextPrimary));
             list.Images.Add("screen", IconProvider.Get("screen", ThemeColors.Info));
             return list;
+        }
+
+        /// <summary>Creates a compact block-type marker for the owned tree image list.</summary>
+        /// <param name="text">Two-letter engineering kind.</param>
+        /// <param name="color">Semantic marker foreground.</param>
+        /// <returns>A bitmap owned by the image-list builder.</returns>
+        private static Bitmap CreateKindImage(string text, Color color) {
+            var bitmap = new Bitmap(24, 24);
+            using (var graphics = Graphics.FromImage(bitmap))
+            using (var font = new Font("Segoe UI", 9F, FontStyle.Bold))
+            using (var pen = new Pen(ThemeColors.BorderStrong)) {
+                graphics.Clear(ThemeColors.InputSurface);
+                graphics.DrawRectangle(pen, 0, 2, 23, 19);
+                TextRenderer.DrawText(graphics, text, font, new Rectangle(0, 0, 24, 24), color, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            }
+
+            return bitmap;
+        }
+
+        /// <summary>
+        /// Applies a checked state to a node and all descendants.
+        /// </summary>
+        /// <param name="node">Root node to update.</param>
+        /// <param name="value">Checked state to apply.</param>
+        private void SetCheckedRecursive(TreeNode node, bool value) {
+            node.Checked = value && this.IsNodeExportable(node);
+            foreach (TreeNode child in node.Nodes) {
+                this.SetCheckedRecursive(child, value);
+            }
+        }
+
+        /// <summary>
+        /// Determines whether a node can participate in export selection.
+        /// </summary>
+        /// <param name="node">Tree node to inspect.</param>
+        /// <returns><see langword="true"/> when the node or one of its descendants is exportable.</returns>
+        private bool IsNodeExportable(TreeNode node) {
+            if (node.Tag is ExportItem) {
+                return this._isItemSelectable((ExportItem)node.Tag);
+            }
+
+            foreach (TreeNode child in node.Nodes) {
+                if (this.IsNodeExportable(child)) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -423,11 +495,12 @@ namespace EidoTiaWorkbench.Controls {
                 }
 
                 foreach (TreeNode child in e.Node.Nodes) {
-                    SetCheckedRecursive(child, e.Node.Checked);
+                    this.SetCheckedRecursive(child, e.Node.Checked);
                 }
 
                 UpdateParents(e.Node);
-            } finally {
+            }
+            finally {
                 this._suppressCheckEvents = false;
             }
 

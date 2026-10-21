@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// IconProvider.cs
+// Generates simple first-party bitmap icons for the desktop UI.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -29,27 +35,38 @@ namespace EidoTiaWorkbench.Theme {
                     var key = (name ?? string.Empty).ToLowerInvariant();
                     if (key == "dashboard") {
                         DrawDashboard(g, pen, size);
-                    } else if (key == "project") {
+                    }
+                    else if (key == "project") {
                         DrawProject(g, pen, size);
-                    } else if (key == "export") {
+                    }
+                    else if (key == "export") {
                         DrawArrow(g, pen, size, true);
-                    } else if (key == "import") {
+                    }
+                    else if (key == "import") {
                         DrawArrow(g, pen, size, false);
-                    } else if (key == "activity") {
+                    }
+                    else if (key == "activity") {
                         DrawActivity(g, pen, size);
-                    } else if (key == "settings") {
+                    }
+                    else if (key == "settings") {
                         DrawSettings(g, pen, size);
-                    } else if (key == "plc") {
+                    }
+                    else if (key == "plc") {
                         DrawChip(g, pen, size);
-                    } else if (key == "hmi" || key == "screen") {
+                    }
+                    else if (key == "hmi" || key == "screen") {
                         DrawScreen(g, pen, size);
-                    } else if (key == "warning") {
+                    }
+                    else if (key == "warning") {
                         DrawWarning(g, pen, size);
-                    } else if (key == "error") {
+                    }
+                    else if (key == "error") {
                         DrawError(g, pen, size);
-                    } else if (key == "success") {
+                    }
+                    else if (key == "success") {
                         DrawSuccess(g, pen, size);
-                    } else {
+                    }
+                    else {
                         DrawDocument(g, pen, size);
                     }
                 }
@@ -97,7 +114,8 @@ namespace EidoTiaWorkbench.Theme {
                 g.DrawLine(pen, 3, y, s - 4, y);
                 g.DrawLine(pen, s - 7, y - 4, s - 3, y);
                 g.DrawLine(pen, s - 7, y + 4, s - 3, y);
-            } else {
+            }
+            else {
                 g.DrawLine(pen, s - 3, y, 4, y);
                 g.DrawLine(pen, 7, y - 4, 3, y);
                 g.DrawLine(pen, 7, y + 4, 3, y);

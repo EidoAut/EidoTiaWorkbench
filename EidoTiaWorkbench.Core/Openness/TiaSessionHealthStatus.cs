@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// TiaSessionHealthStatus.cs
+// Classifies the current TIA Portal session and project availability.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Openness {
     /// <summary>
     /// Classifies the current TIA Portal session and project availability.

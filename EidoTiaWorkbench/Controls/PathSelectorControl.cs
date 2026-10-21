@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// PathSelectorControl.cs
+// Provides a text box and browse button for selecting a folder or project file path.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Drawing;
 using System.IO;
@@ -25,8 +31,8 @@ namespace EidoTiaWorkbench.Controls {
             this.Dock = DockStyle.Fill;
 
             // The selector needs a minimum width for the text field plus the auto-sized Browse button.
-            this.MinimumSize = new Size(280, 38);
-            this.Height = 38;
+            this.MinimumSize = new Size(280, 42);
+            this.Height = 42;
             this._toolTip = new ToolTip();
 
             var layout = new TableLayoutPanel {
@@ -56,7 +62,7 @@ namespace EidoTiaWorkbench.Controls {
                 Text = "Browse",
                 Anchor = AnchorStyles.None,
                 AutoSize = false,
-                Size = new Size(96, 36),
+                Size = new Size(104, 40),
                 Margin = Padding.Empty,
             };
             this._browseButton.Click += this.BrowseButton_Click;
@@ -111,6 +117,15 @@ namespace EidoTiaWorkbench.Controls {
             get; set;
         }
 
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                this._toolTip.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
         /// <summary>
         /// Opens the configured folder or file picker and updates the selected path.
         /// </summary>
@@ -128,7 +143,8 @@ namespace EidoTiaWorkbench.Controls {
                         this.SelectedPath = dlg.SelectedPath;
                     }
                 }
-            } else {
+            }
+            else {
                 using (var dlg = new OpenFileDialog()) {
                     dlg.Title = this.DialogTitle ?? "Select file";
                     dlg.Filter = "TIA Project (*.ap*)|*.ap*|All files (*.*)|*.*";

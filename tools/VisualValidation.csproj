@@ -1,0 +1,40 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <ProjectGuid>{DC8B9533-D78D-4F79-8FD1-5225137D5662}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <ApplicationManifest>..\EidoTiaWorkbench\app.manifest</ApplicationManifest>
+    <AssemblyName>VisualValidation</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>7.3</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>bin\x64\$(Configuration)\</OutputPath>
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <Deterministic>true</Deterministic>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <ProjectReference Include="..\EidoTiaWorkbench\EidoTiaWorkbench.WinForms.csproj">
+      <Project>{27590726-D1C7-44C2-9488-EC70C2F743C9}</Project>
+      <Name>EidoTiaWorkbench.WinForms</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EidoTiaWorkbench.Core\EidoTiaWorkbench.Core.csproj">
+      <Project>{E11E8C0E-6674-4CC8-96E4-3A46FC5A5E5D}</Project>
+      <Name>EidoTiaWorkbench.Core</Name>
+    </ProjectReference>
+    <Compile Include="VisualValidation.cs" />
+    <Compile Include="DesignPreview.cs" />
+    <None Include="App.config" />
+    <AdditionalFiles Include="..\stylecop.json" Link="stylecop.json" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// DashboardView.cs
+// Displays high-level portal, project, workspace, and last-operation status.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Drawing;
 using System.Linq;
@@ -35,13 +41,14 @@ namespace EidoTiaWorkbench.Views {
         public DashboardView() {
             this.Dock = DockStyle.Fill;
             this.BackColor = ThemeColors.Background;
-            this.Padding = new Padding(18);
+            this.Padding = new Padding(ThemeMetrics.Xl);
 
             var root = new TableLayoutPanel {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
                 RowCount = 4,
             };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
@@ -149,12 +156,12 @@ namespace EidoTiaWorkbench.Views {
         /// <param name="state">Application state to display.</param>
         public void Bind(ApplicationState state) {
             var connected = state.PortalConnectionState == PortalConnectionState.Connected;
-            this._connection.SetConnected(connected, connected ? "Openness V21 session available" : "No active Openness session");
+            this._connection.SetConnected(connected, connected ? state.IntegrationVersion + " session available" : "No active Openness session");
             this._session.SetContent("Session", state.PortalOwnership.ToString());
 
             var project = state.ActiveProject;
             this._project.SetContent("Active project", project == null ? "-" : project.Name);
-            this._tiaVersion.SetContent("TIA Portal version", project == null ? "V21" : project.Version);
+            this._tiaVersion.SetContent("TIA Portal version", project == null ? state.IntegrationVersion : project.Version);
             this._plcTargets.SetContent("Detected PLC targets", project == null ? "0" : project.PlcTargets.Count.ToString());
             this._hmiTargets.SetContent("Detected HMI targets", project == null ? "0" : project.HmiTargets.Count.ToString());
             this._repository.SetContent("Workspace folder", state.SelectedRepository);
@@ -162,8 +169,16 @@ namespace EidoTiaWorkbench.Views {
             this._lastImport.SetContent("Last import", state.LastImport);
             this._lastResult.SetContent("Last operation result", state.LastOperationResult);
 
-            this._cardsGrid.Visible = connected;
+            this._cardsGrid.Visible = true;
             this._emptyStateHost.Visible = !connected;
+        }
+
+        /// <inheritdoc />
+        protected override void OnFontChanged(EventArgs e) {
+            base.OnFontChanged(e);
+            if (this._cards != null) {
+                this.UpdateCardLayout();
+            }
         }
 
         /// <summary>
@@ -196,7 +211,7 @@ namespace EidoTiaWorkbench.Views {
         /// </summary>
         private void UpdateCardLayout() {
             var availableWidth = this._contentPanel.ClientSize.Width;
-            var columns = availableWidth >= 1100 ? 3 : availableWidth >= 760 ? 2 : 1;
+            var columns = availableWidth >= ThemeMetrics.Scale(this, 1100) ? 3 : availableWidth >= ThemeMetrics.Scale(this, 760) ? 2 : 1;
 
             this._cardsGrid.SuspendLayout();
             try {
@@ -212,7 +227,7 @@ namespace EidoTiaWorkbench.Views {
                     var row = i / columns;
                     var column = i % columns;
                     if (row >= this._cardsGrid.RowStyles.Count) {
-                        this._cardsGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                        this._cardsGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, ThemeMetrics.Scale(this, 112)));
                     }
 
                     this._cardsGrid.Controls.Add(this._cards[i], column, row);
@@ -223,7 +238,8 @@ namespace EidoTiaWorkbench.Views {
                 if (remainder == 1 && columns > 1) {
                     this._cardsGrid.SetColumnSpan(this._lastResult, columns);
                 }
-            } finally {
+            }
+            finally {
                 this._cardsGrid.ResumeLayout();
             }
         }

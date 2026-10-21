@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// PageHeader.cs
+// Displays a page title and subtitle at the top of a view.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Drawing;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Theme;
@@ -48,6 +54,12 @@ namespace EidoTiaWorkbench.Controls {
             layout.Controls.Add(this._subtitle, 0, 1);
             this.Controls.Add(layout);
         }
+
+        /// <summary>Gets the page title used by the application shell.</summary>
+        public string TitleText => this._title.Text;
+
+        /// <summary>Gets the short purpose statement used by the application shell.</summary>
+        public string DescriptionText => this._subtitle.Text;
 
         /// <summary>
         /// Updates the page title and subtitle text.

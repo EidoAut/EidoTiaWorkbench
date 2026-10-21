@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportWarning.cs
+// Represents one non-fatal issue encountered while exporting an artifact.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using EidoTiaWorkbench.Core.Model;
 
@@ -7,6 +13,7 @@ namespace EidoTiaWorkbench.Core.Export {
     /// <summary>
     /// Represents one non-fatal issue encountered while exporting an artifact.
     /// </summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class ExportWarning {
         /// <summary>
         /// Initializes a new instance of the <see cref="ExportWarning"/> class.
@@ -21,15 +28,28 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <summary>
         /// Gets the artifact that triggered the warning.
         /// </summary>
+        [System.Runtime.Serialization.DataMember]
         public ExportItem Item {
-            get;
+            get; private set;
         }
 
         /// <summary>
         /// Gets the exception describing the warning condition.
         /// </summary>
         public Exception Exception {
-            get;
+            get; private set;
+        }
+
+        /// <summary>Gets diagnostics for the worker boundary without serializing exception types.</summary>
+        [System.Runtime.Serialization.DataMember]
+        public string Diagnostic {
+            get {
+                return this.Exception == null ? string.Empty : this.Exception.ToString();
+            }
+
+            private set {
+                this.Exception = new InvalidOperationException(value);
+            }
         }
 
         /// <summary>

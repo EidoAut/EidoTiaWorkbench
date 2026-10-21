@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ExportRunStatus.cs
+// Classifies the overall result of an export run after all artifact-level outcomes are known.
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Core.Export {
     /// <summary>
     /// Classifies the overall result of an export run after all artifact-level outcomes are known.

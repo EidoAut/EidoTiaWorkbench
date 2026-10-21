@@ -1,7 +1,13 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
-using System.Drawing;
+// =========================================================================
+// OperationSummaryForm.cs
+// Shows operation counters, messages, and optional confirmation controls.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Application;
@@ -101,23 +107,29 @@ namespace EidoTiaWorkbench.Forms {
             buttons.Controls.Add(cancel);
 
             if (confirmMode) {
-                var confirm = new PrimaryButton {
-                    Text = "Confirm",
+                var confirm = new DangerButton {
+                    Text = "Confirm import",
                     DialogResult = DialogResult.OK,
                 };
                 buttons.Controls.Add(confirm);
-                this.AcceptButton = confirm;
-            } else {
+                this.AcceptButton = cancel;
+            }
+            else {
                 this.AcceptButton = cancel;
             }
 
             this.CancelButton = cancel;
+            this.Shown += (sender, e) => {
+                details.Select(0, 0);
+                cancel.Focus();
+            };
             root.Controls.Add(title, 0, 0);
             root.Controls.Add(subtitle, 0, 1);
             root.Controls.Add(counts, 0, 2);
             root.Controls.Add(details, 0, 3);
             root.Controls.Add(buttons, 0, 4);
             this.Controls.Add(root);
+            AppTheme.ApplyThemeTree(this);
         }
 
         /// <summary>
@@ -154,13 +166,13 @@ namespace EidoTiaWorkbench.Forms {
         /// <returns>Theme color matching the global operation state.</returns>
         private static Color GetStatusColor(OperationSummary summary) {
             var status = summary == null ? string.Empty : summary.Status ?? string.Empty;
-            if (status.IndexOf("Failed", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            if (summary?.Errors > 0 || status.IndexOf("Failed", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 status.IndexOf("Aborted", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 status.IndexOf("Error", System.StringComparison.OrdinalIgnoreCase) >= 0) {
                 return ThemeColors.Error;
             }
 
-            if (status.IndexOf("Issue", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            if (summary?.Warnings > 0 || status.IndexOf("Review", System.StringComparison.OrdinalIgnoreCase) >= 0 || status.IndexOf("Issue", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 status.IndexOf("Warning", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 status.IndexOf("Cancelled", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 status.IndexOf("Preflight", System.StringComparison.OrdinalIgnoreCase) >= 0) {
@@ -228,7 +240,8 @@ namespace EidoTiaWorkbench.Forms {
             lines.Add("Messages");
             if (summary.Messages.Any()) {
                 lines.AddRange(summary.Messages);
-            } else {
+            }
+            else {
                 lines.Add("No additional messages.");
             }
 

@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ThemedButtonRole.cs
+// Identifies the visual role applied by .
+//
+// Developed by EIDO Automation
+// =========================================================================
 namespace EidoTiaWorkbench.Controls {
     /// <summary>
     /// Identifies the visual role applied by <see cref="ThemedButton"/>.

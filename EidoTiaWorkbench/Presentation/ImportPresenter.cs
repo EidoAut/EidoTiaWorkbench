@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// ImportPresenter.cs
+// Wires import view actions to repository inventory, dry-run, and import workflows.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System.Linq;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Application;
@@ -19,34 +25,40 @@ namespace EidoTiaWorkbench.Presentation {
         /// <param name="controller">Controller that executes repository and import commands.</param>
         /// <param name="state">Application state used to refresh repository bindings.</param>
         public ImportPresenter(ImportView view, MainController controller, ApplicationState state) {
-            view.LoadRepositoryRequested += (s, e) => FireAndReport(view, async () => {
-                await controller.LoadRepositoryInventoryAsync(view.RepositoryPath);
-                view.Bind(state);
-            });
+            view.LoadRepositoryRequested += (s, e) => FireAndReport(
+                view,
+                async () => {
+                    await controller.LoadRepositoryInventoryAsync(view.RepositoryPath);
+                    view.Bind(state);
+                });
 
-            view.DryRunRequested += (s, e) => FireAndReport(view, async () => {
-                var summary = await controller.PreviewImportRepositoryArtifactsAsync(view.SelectedArtifacts, view.ConflictPolicy);
-                summary.Messages.Add("Dry run only. No objects will be imported.");
-                using (var form = new OperationSummaryForm(summary, confirmMode: false)) {
-                    form.ShowDialog(view);
-                }
-            });
-
-            view.ImportSelectedRequested += (s, e) => FireAndReport(view, async () => {
-                var selected = view.SelectedArtifacts;
-                var summary = await controller.PreviewImportRepositoryArtifactsAsync(selected, view.ConflictPolicy);
-                summary.Operation = "Import selected";
-                summary.BackupPath = view.CreateBackupBeforeImport
-                    ? "A backup will be created before replacing HMI screens."
-                    : "Backup disabled by user.";
-                using (var form = new OperationSummaryForm(summary, confirmMode: true)) {
-                    if (form.ShowDialog(view) != DialogResult.OK) {
-                        return;
+            view.DryRunRequested += (s, e) => FireAndReport(
+                view,
+                async () => {
+                    var summary = await controller.PreviewImportRepositoryArtifactsAsync(view.SelectedArtifacts, view.ConflictPolicy);
+                    summary.Messages.Add("Dry run only. No objects will be imported.");
+                    using (var form = new OperationSummaryForm(summary, confirmMode: false)) {
+                        form.ShowDialog(view);
                     }
-                }
+                });
 
-                await controller.ImportRepositoryArtifactsAsync(selected, view.ConflictPolicy, view.CreateBackupBeforeImport);
-            });
+            view.ImportSelectedRequested += (s, e) => FireAndReport(
+                view,
+                async () => {
+                    var selected = view.SelectedArtifacts;
+                    var summary = await controller.PreviewImportRepositoryArtifactsAsync(selected, view.ConflictPolicy);
+                    summary.Operation = "Import selected";
+                    summary.BackupPath = view.CreateBackupBeforeImport
+                        ? "A backup will be created before replacing HMI screens."
+                        : "Backup disabled by user.";
+                    using (var form = new OperationSummaryForm(summary, confirmMode: true)) {
+                        if (form.ShowDialog(view) != DialogResult.OK) {
+                            return;
+                        }
+                    }
+
+                    await controller.ImportRepositoryArtifactsAsync(selected, view.ConflictPolicy, view.CreateBackupBeforeImport);
+                });
         }
 
         /// <summary>

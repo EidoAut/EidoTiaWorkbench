@@ -1,5 +1,11 @@
-// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+﻿// Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+// =========================================================================
+// PresenterBase.cs
+// Provides shared presenter helpers for reporting asynchronous command failures.
+//
+// Developed by EIDO Automation
+// =========================================================================
 using System;
 using System.Windows.Forms;
 using EidoTiaWorkbench.Application;
@@ -17,7 +23,8 @@ namespace EidoTiaWorkbench.Presentation {
         protected static async void FireAndReport(IWin32Window owner, Func<System.Threading.Tasks.Task> action) {
             try {
                 await action();
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 MessageBox.Show(owner, ex.Message, ProductInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
