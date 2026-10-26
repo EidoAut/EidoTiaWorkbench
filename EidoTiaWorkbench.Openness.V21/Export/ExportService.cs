@@ -54,7 +54,10 @@ namespace EidoTiaWorkbench.Core.Export {
         /// Thrown when <paramref name="session"/>, <paramref name="xmlNormalize"/>, or
         /// <paramref name="manifestService"/> is <see langword="null"/>.
         /// </exception>
-        public ExportService(TiaSessionService session, XmlNormalizeService xmlNormalize, ManifestService manifestService)
+        public ExportService(
+            TiaSessionService session,
+            XmlNormalizeService xmlNormalize,
+            ManifestService manifestService)
             : this(session, xmlNormalize, manifestService, NullLogger.Instance) {
         }
 
@@ -69,7 +72,11 @@ namespace EidoTiaWorkbench.Core.Export {
         /// Thrown when <paramref name="session"/>, <paramref name="xmlNormalize"/>, or
         /// <paramref name="manifestService"/> is <see langword="null"/>.
         /// </exception>
-        public ExportService(TiaSessionService session, XmlNormalizeService xmlNormalize, ManifestService manifestService, ILogger logger) {
+        public ExportService(
+            TiaSessionService session,
+            XmlNormalizeService xmlNormalize,
+            ManifestService manifestService,
+            ILogger logger) {
             this._session = session ?? throw new ArgumentNullException(nameof(session));
             this._xmlNormalize = xmlNormalize ?? throw new ArgumentNullException(nameof(xmlNormalize));
             this._manifestService = manifestService ?? throw new ArgumentNullException(nameof(manifestService));
@@ -83,20 +90,30 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="repoRoot">Root folder where the export run should be created or updated.</param>
         /// <param name="selection">Artifacts selected for export.</param>
         /// <param name="normalizeXml">Whether exported XML should be normalized before it is written.</param>
-        /// <param name="incremental">Whether unchanged files should be skipped through manifest hash comparison.</param>
+        /// <param name="incremental">
+        /// Whether unchanged files should be skipped through manifest hash comparison.
+        /// </param>
         /// <param name="progress">
         /// Optional callback receiving processed count, total count, current item, and exception if any.
         /// </param>
         /// <returns>A result object containing output path, counters, warnings, and errors.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="repoRoot"/> is empty.</exception>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="selection"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="selection"/> is <see langword="null"/>.
+        /// </exception>
         public ExportResult Export(
             string repoRoot,
             IReadOnlyCollection<ExportItem> selection,
             bool normalizeXml,
             bool incremental,
             Action<int, int, ExportItem, Exception> progress = null) {
-            return this.Export(repoRoot, selection, normalizeXml, preserveHmiXml: true, incremental: incremental, progress: progress);
+            return this.Export(
+                repoRoot,
+                selection,
+                normalizeXml,
+                preserveHmiXml: true,
+                incremental: incremental,
+                progress: progress);
         }
 
         /// <summary>
@@ -105,14 +122,20 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="repoRoot">Root folder where the export run should be created or updated.</param>
         /// <param name="selection">Artifacts selected for export.</param>
         /// <param name="normalizePlcXml">Whether PLC XML should be normalized before writing.</param>
-        /// <param name="preserveHmiXml">Whether HMI screen XML should be preserved exactly as Openness exported it.</param>
-        /// <param name="incremental">Whether unchanged files should be skipped through manifest hash comparison.</param>
+        /// <param name="preserveHmiXml">
+        /// Whether HMI screen XML should be preserved exactly as Openness exported it.
+        /// </param>
+        /// <param name="incremental">
+        /// Whether unchanged files should be skipped through manifest hash comparison.
+        /// </param>
         /// <param name="progress">
         /// Optional callback receiving processed count, total count, current item, and exception if any.
         /// </param>
         /// <returns>A result object containing output path, counters, warnings, and errors.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="repoRoot"/> is empty.</exception>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="selection"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="selection"/> is <see langword="null"/>.
+        /// </exception>
         public ExportResult Export(
             string repoRoot,
             IReadOnlyCollection<ExportItem> selection,
@@ -136,11 +159,18 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="repoRoot">Root folder where the export run should be created or updated.</param>
         /// <param name="selection">Artifacts selected for export.</param>
         /// <param name="normalizePlcXml">Whether PLC XML should be normalized before writing.</param>
-        /// <param name="preserveHmiXml">Whether HMI screen XML should be preserved exactly as Openness exported it.</param>
-        /// <param name="incremental">Whether unchanged files should be skipped through manifest hash comparison.</param>
+        /// <param name="preserveHmiXml">
+        /// Whether HMI screen XML should be preserved exactly as Openness exported it.
+        /// </param>
+        /// <param name="incremental">
+        /// Whether unchanged files should be skipped through manifest hash comparison.
+        /// </param>
         /// <param name="progress">Optional progress callback.</param>
         /// <param name="cancellationToken">Cancellation token checked before each artifact is started.</param>
-        /// <returns>A result object containing artifact-level outcomes, output paths, counters, warnings, and errors.</returns>
+        /// <param name="sourceProjectPath">Optional project location captured by the scan.</param>
+        /// <returns>
+        /// A result object containing artifact-level outcomes, output paths, counters, warnings, and errors.
+        /// </returns>
         public ExportResult Export(
             string repoRoot,
             IReadOnlyCollection<ExportItem> selection,
@@ -148,7 +178,8 @@ namespace EidoTiaWorkbench.Core.Export {
             bool preserveHmiXml,
             bool incremental,
             Action<int, int, ExportItem, Exception> progress,
-            CancellationToken cancellationToken) {
+            CancellationToken cancellationToken,
+            string sourceProjectPath = null) {
             if (string.IsNullOrWhiteSpace(repoRoot)) {
                 throw new ArgumentException("Repo root is required.", nameof(repoRoot));
             }
@@ -162,12 +193,22 @@ namespace EidoTiaWorkbench.Core.Export {
                 throw new InvalidOperationException(initialHealth.Message, initialHealth.Exception);
             }
 
-            var projectName = string.IsNullOrWhiteSpace(initialHealth.ProjectName) ? "Project" : initialHealth.ProjectName;
+            if (sourceProjectPath != null && !string.Equals(
+                initialHealth.ProjectPath, sourceProjectPath, StringComparison.OrdinalIgnoreCase)) {
+                throw new InvalidOperationException("Project changed since scan. Scan again.");
+            }
+
+            var projectName = string.IsNullOrWhiteSpace(
+                initialHealth.ProjectName) ? "Project" : initialHealth.ProjectName;
             var expectedProjectName = initialHealth.ProjectName;
             var expectedProjectPath = initialHealth.ProjectPath;
+            var runName = PathHelper.Sanitize(projectName) + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") +
+                "_" + Guid.NewGuid().ToString("N").Substring(0, 8);
             var runRoot = incremental
                 ? Path.Combine(repoRoot, PathHelper.Sanitize(projectName))
-                : Path.Combine(repoRoot, PathHelper.Sanitize(projectName) + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                : Path.Combine(
+                    repoRoot,
+                    runName);
             Directory.CreateDirectory(runRoot);
 
             var manifest = incremental ? this._manifestService.Load(runRoot) : new Manifest();
@@ -176,6 +217,7 @@ namespace EidoTiaWorkbench.Core.Export {
                 throw new InvalidOperationException("Incremental export cannot mix TIA versions in one manifest.");
             }
 
+            ManifestService.BindProject(runRoot, manifest, expectedProjectPath);
             manifest.TiaVersion = "V21";
             manifest.OpennessVersion = typeof(Siemens.Engineering.TiaPortal).Assembly.GetName().Version.ToString();
             var result = new ExportResult {
@@ -209,7 +251,9 @@ namespace EidoTiaWorkbench.Core.Export {
                     if (!sessionRecoveryAttempted) {
                         sessionRecoveryAttempted = true;
                         recoveryAttempted = true;
-                        var recoveryHealth = this._session.TryRecoverProjectOnSta(expectedProjectName, expectedProjectPath);
+                        var recoveryHealth = this._session.TryRecoverProjectOnSta(
+                            expectedProjectName,
+                            expectedProjectPath);
                         recoverySucceeded = recoveryHealth.IsHealthy;
                         recoveryDetail = BuildRecoveryDetail(healthBefore, recoveryHealth);
                         healthBefore = recoveryHealth;
@@ -272,6 +316,9 @@ namespace EidoTiaWorkbench.Core.Export {
                         continue;
                     }
 
+                    var verifiedPayload = incremental && existing != null &&
+                        ManifestService.HasVerifiedPayload(runRoot, existing);
+                    progress?.Invoke(processed, total, item, null);
                     var xml = this.ExportSingleToString(item);
                     if (item.IsPlc && normalizePlcXml) {
                         xml = this._xmlNormalize.Normalize(xml);
@@ -284,10 +331,11 @@ namespace EidoTiaWorkbench.Core.Export {
                     if (incremental &&
                         existing != null &&
                         string.Equals(existing.Sha256, candidateHash, StringComparison.OrdinalIgnoreCase) &&
-                        HasExistingPayload(runRoot, existing)) {
+                        verifiedPayload) {
                         record.Status = ArtifactExportStatus.SkippedUnchanged;
                         record.Message = "Artifact was unchanged; previous payload was kept.";
-                        record.PrimaryPath = string.IsNullOrWhiteSpace(existing.PrimaryPath) ? rel : existing.PrimaryPath;
+                        record.PrimaryPath = string.IsNullOrWhiteSpace(
+                            existing.PrimaryPath) ? rel : existing.PrimaryPath;
                         record.Hash = candidateHash;
                         record.IsTransient = false;
                         record.IsRetryable = false;
@@ -320,10 +368,14 @@ namespace EidoTiaWorkbench.Core.Export {
                     var recoverySucceeded = false;
                     var recoveryDetail = string.Empty;
                     var retryCurrentAfterRecovery = false;
-                    if (ExportFailureIsolationPolicy.ShouldAttemptControlledRecovery(classification, sessionRecoveryAttempted)) {
+                    if (ExportFailureIsolationPolicy.ShouldAttemptControlledRecovery(
+                        classification,
+                        sessionRecoveryAttempted)) {
                         sessionRecoveryAttempted = true;
                         recoveryAttempted = true;
-                        var recoveryHealth = this._session.TryRecoverProjectOnSta(expectedProjectName, expectedProjectPath);
+                        var recoveryHealth = this._session.TryRecoverProjectOnSta(
+                            expectedProjectName,
+                            expectedProjectPath);
                         recoverySucceeded = recoveryHealth.IsHealthy;
                         recoveryDetail = BuildRecoveryDetail(healthAfter, recoveryHealth);
                         healthAfter = recoveryHealth;
@@ -388,7 +440,9 @@ namespace EidoTiaWorkbench.Core.Export {
             manifest.RunCompletedUtc = result.CompletedUtc.ToString("o");
             manifest.RunStatus = result.Status.ToString();
             manifest.OperationReportPath = result.OperationReportPath;
-            manifest.FirstSessionFailureKey = result.FirstSessionFailure == null ? null : result.FirstSessionFailure.LogicalKey;
+            manifest.FirstSessionFailureKey = result.FirstSessionFailure == null
+                ? null
+                : result.FirstSessionFailure.LogicalKey;
 
             this._manifestService.PruneMissingEntries(runRoot, manifest);
             this._manifestService.Save(runRoot, manifest);
@@ -405,7 +459,11 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="item">Artifact associated with the record.</param>
         /// <param name="record">Artifact-level result record.</param>
         /// <param name="exception">Optional exception associated with the record.</param>
-        private static void AddRecord(ExportResult result, ExportItem item, ArtifactExportRecord record, Exception exception) {
+        private static void AddRecord(
+            ExportResult result,
+            ExportItem item,
+            ArtifactExportRecord record,
+            Exception exception) {
             result.Artifacts.Add(record);
 
             if (record.Status == ArtifactExportStatus.Failed) {
@@ -414,7 +472,8 @@ namespace EidoTiaWorkbench.Core.Export {
             else if (record.Status == ArtifactExportStatus.Restricted ||
                        record.Status == ArtifactExportStatus.Unavailable ||
                        record.Status == ArtifactExportStatus.Unsupported) {
-                result.Warnings.Add(new ExportWarning(item, exception ?? new ExportWarningException(record.Message, item)));
+                result.Warnings.Add(
+                    new ExportWarning(item, exception ?? new ExportWarningException(record.Message, item)));
             }
         }
 
@@ -426,7 +485,11 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="relativePath">Repository-relative payload path expected for this run.</param>
         /// <param name="entryKey">Manifest key that contained the returned entry.</param>
         /// <returns>The matching manifest entry, or <see langword="null"/> when absent.</returns>
-        private static ManifestEntry FindManifestEntry(Manifest manifest, ExportItem item, string relativePath, out string entryKey) {
+        private static ManifestEntry FindManifestEntry(
+            Manifest manifest,
+            ExportItem item,
+            string relativePath,
+            out string entryKey) {
             entryKey = null;
             if (manifest == null || manifest.Entries == null) {
                 return null;
@@ -452,7 +515,8 @@ namespace EidoTiaWorkbench.Core.Export {
 
                 if (string.Equals(value.LogicalKey, logicalKey, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(value.PrimaryPath, relativePath, StringComparison.OrdinalIgnoreCase) ||
-                    (value.Files != null && value.Files.Any(f => string.Equals(f, relativePath, StringComparison.OrdinalIgnoreCase)))) {
+                    (value.Files != null && value.Files.Any(
+                        f => string.Equals(f, relativePath, StringComparison.OrdinalIgnoreCase)))) {
                     entryKey = pair.Key;
                     return value;
                 }
@@ -469,7 +533,12 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="record">Final artifact result.</param>
         /// <param name="existing">Existing manifest entry, if any.</param>
         /// <param name="existingKey">Key that contained the existing entry.</param>
-        private static void UpsertManifestEntry(Manifest manifest, ExportItem item, ArtifactExportRecord record, ManifestEntry existing, string existingKey) {
+        private static void UpsertManifestEntry(
+            Manifest manifest,
+            ExportItem item,
+            ArtifactExportRecord record,
+            ManifestEntry existing,
+            string existingKey) {
             var descriptor = ArtifactCatalog.Get(item.Kind);
             var key = GetArtifactKey(item);
             var entry = existing ?? new ManifestEntry();
@@ -524,7 +593,8 @@ namespace EidoTiaWorkbench.Core.Export {
             }
             else if (record.Status == ArtifactExportStatus.SkippedUnchanged) {
                 entry.Sha256 = string.IsNullOrWhiteSpace(record.Hash) ? entry.Sha256 : record.Hash;
-                entry.PrimaryPath = string.IsNullOrWhiteSpace(record.PrimaryPath) ? entry.PrimaryPath : record.PrimaryPath;
+                entry.PrimaryPath = string.IsNullOrWhiteSpace(
+                    record.PrimaryPath) ? entry.PrimaryPath : record.PrimaryPath;
                 if ((entry.Files == null || entry.Files.Count == 0) && !string.IsNullOrWhiteSpace(entry.PrimaryPath)) {
                     entry.Files = new List<string> { entry.PrimaryPath };
                 }
@@ -595,7 +665,9 @@ namespace EidoTiaWorkbench.Core.Export {
                 record.IsRetryable = true;
                 record.CompleteNow();
                 string existingKey;
-                var relative = MakeRepoRelative(result.OutputRoot, PathHelper.GetOutputFilePath(result.OutputRoot, item));
+                var relative = MakeRepoRelative(
+                    result.OutputRoot,
+                    PathHelper.GetOutputFilePath(result.OutputRoot, item));
                 var existing = FindManifestEntry(manifest, item, relative, out existingKey);
                 UpsertManifestEntry(manifest, item, record, existing, existingKey);
                 AddRecord(result, item, record, null);
@@ -653,7 +725,9 @@ namespace EidoTiaWorkbench.Core.Export {
                 }
 
                 string existingKey;
-                var relative = MakeRepoRelative(result.OutputRoot, PathHelper.GetOutputFilePath(result.OutputRoot, item));
+                var relative = MakeRepoRelative(
+                    result.OutputRoot,
+                    PathHelper.GetOutputFilePath(result.OutputRoot, item));
                 var existing = FindManifestEntry(manifest, item, relative, out existingKey);
                 UpsertManifestEntry(manifest, item, record, existing, existingKey);
                 AddRecord(result, item, record, null);
@@ -671,36 +745,13 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="after">Health observed after recovery.</param>
         /// <returns>Single diagnostic text value for reports and manifests.</returns>
         private static string BuildRecoveryDetail(TiaSessionHealth before, TiaSessionHealth after) {
-            var initial = before == null ? "Session health before recovery was not captured." : before.ToDiagnosticString();
-            var recovered = after == null ? "Session recovery did not return a health result." : after.ToDiagnosticString();
+            var initial = before == null
+                ? "Session health before recovery was not captured."
+                : before.ToDiagnosticString();
+            var recovered = after == null
+                ? "Session recovery did not return a health result."
+                : after.ToDiagnosticString();
             return "Before recovery: " + initial + Environment.NewLine + "After recovery: " + recovered;
-        }
-
-        /// <summary>
-        /// Determines whether the previous manifest payload still exists on disk.
-        /// </summary>
-        /// <param name="repoRoot">Repository root used to resolve relative payload paths.</param>
-        /// <param name="entry">Manifest entry to inspect.</param>
-        /// <returns><see langword="true"/> when at least one declared payload file exists.</returns>
-        private static bool HasExistingPayload(string repoRoot, ManifestEntry entry) {
-            if (entry == null) {
-                return false;
-            }
-
-            var files = entry.Files != null && entry.Files.Count > 0
-                ? entry.Files
-                : new List<string> { entry.PrimaryPath };
-            foreach (var file in files) {
-                if (string.IsNullOrWhiteSpace(file)) {
-                    continue;
-                }
-
-                if (File.Exists(Path.Combine(repoRoot, file.Replace("/", Path.DirectorySeparatorChar.ToString())))) {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -726,7 +777,10 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="descriptor">Catalog descriptor.</param>
         /// <param name="adapter">Adapter descriptor.</param>
         /// <returns>Name of the failed capability condition.</returns>
-        private static string BuildUnavailableCondition(ExportItem item, ArtifactDescriptor descriptor, IArtifactAdapter adapter) {
+        private static string BuildUnavailableCondition(
+            ExportItem item,
+            ArtifactDescriptor descriptor,
+            IArtifactAdapter adapter) {
             if (!item.CanExport) {
                 return "item.CanExport";
             }
@@ -795,12 +849,30 @@ namespace EidoTiaWorkbench.Core.Export {
                 sb.AppendLine();
             }
 
-            AppendRecordSection(sb, "Restricted artifacts", result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Restricted));
-            AppendRecordSection(sb, "Unavailable artifacts", result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Unavailable));
-            AppendRecordSection(sb, "Unsupported artifacts", result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Unsupported));
-            AppendRecordSection(sb, "Real errors", result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Failed));
-            AppendRecordSection(sb, "Aborted by session loss", result.Artifacts.Where(r => r.Status == ArtifactExportStatus.AbortedSessionLost));
-            AppendRecordSection(sb, "Cancelled artifacts", result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Cancelled));
+            AppendRecordSection(
+                sb,
+                "Restricted artifacts",
+                result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Restricted));
+            AppendRecordSection(
+                sb,
+                "Unavailable artifacts",
+                result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Unavailable));
+            AppendRecordSection(
+                sb,
+                "Unsupported artifacts",
+                result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Unsupported));
+            AppendRecordSection(
+                sb,
+                "Real errors",
+                result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Failed));
+            AppendRecordSection(
+                sb,
+                "Aborted by session loss",
+                result.Artifacts.Where(r => r.Status == ArtifactExportStatus.AbortedSessionLost));
+            AppendRecordSection(
+                sb,
+                "Cancelled artifacts",
+                result.Artifacts.Where(r => r.Status == ArtifactExportStatus.Cancelled));
             File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
         }
 
@@ -821,22 +893,31 @@ namespace EidoTiaWorkbench.Core.Export {
                     result.FirstSessionFailure != null) {
                     var finalCascade = result.Artifacts.Count(r =>
                         r.Status == ArtifactExportStatus.AbortedSessionLost &&
-                        !string.Equals(r.LogicalKey, result.FirstSessionFailure.LogicalKey, StringComparison.OrdinalIgnoreCase));
+                        !string.Equals(
+                            r.LogicalKey,
+                            result.FirstSessionFailure.LogicalKey,
+                            StringComparison.OrdinalIgnoreCase));
                     sb.AppendLine("  Safe export phase completed before the final isolated artifact phase.");
-                    sb.AppendLine("  A final isolated artifact caused TIA session/project loss; completed payloads were retained.");
+                    sb.AppendLine(
+                        "  A final isolated artifact caused TIA session/project loss; completed payloads were retained.");
                     sb.AppendLine("  Root artifact: " + FormatRecordLine(result.FirstSessionFailure));
                     sb.AppendLine("  Final isolated not-attempted artifacts: " + finalCascade);
                     if (result.FirstSessionFailure.SessionRecoveryAttempted) {
-                        sb.AppendLine("  Controlled recovery attempted: " + result.FirstSessionFailure.SessionRecoverySucceeded);
+                        sb.AppendLine(
+                            "  Controlled recovery attempted: " + result.FirstSessionFailure.SessionRecoverySucceeded);
                         if (!string.IsNullOrWhiteSpace(result.FirstSessionFailure.SessionRecoveryDetail)) {
-                            sb.AppendLine("  Recovery detail: " + result.FirstSessionFailure.SessionRecoveryDetail.Replace(Environment.NewLine, " | "));
+                            sb.AppendLine(
+                                "  Recovery detail: " + result.FirstSessionFailure.SessionRecoveryDetail.Replace(
+                                    Environment.NewLine,
+                                    " | "));
                         }
                     }
 
                     return;
                 }
 
-                sb.AppendLine("  Queue completed. Artifact-level issues were isolated and did not abort remaining exports.");
+                sb.AppendLine(
+                    "  Queue completed. Artifact-level issues were isolated and did not abort remaining exports.");
                 return;
             }
 
@@ -865,7 +946,8 @@ namespace EidoTiaWorkbench.Core.Export {
             if (first.SessionRecoveryAttempted) {
                 sb.AppendLine("  Controlled recovery attempted: " + first.SessionRecoverySucceeded);
                 if (!string.IsNullOrWhiteSpace(first.SessionRecoveryDetail)) {
-                    sb.AppendLine("  Recovery detail: " + first.SessionRecoveryDetail.Replace(Environment.NewLine, " | "));
+                    sb.AppendLine(
+                        "  Recovery detail: " + first.SessionRecoveryDetail.Replace(Environment.NewLine, " | "));
                 }
             }
         }
@@ -876,7 +958,10 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="sb">Report builder.</param>
         /// <param name="title">Section title.</param>
         /// <param name="groups">Groups to summarize.</param>
-        private static void AppendGroupedTotals(StringBuilder sb, string title, IEnumerable<IGrouping<string, ArtifactExportRecord>> groups) {
+        private static void AppendGroupedTotals(
+            StringBuilder sb,
+            string title,
+            IEnumerable<IGrouping<string, ArtifactExportRecord>> groups) {
             sb.AppendLine(title);
             foreach (var group in groups.OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)) {
                 sb.AppendLine("  " + (string.IsNullOrWhiteSpace(group.Key) ? "-" : group.Key) + ": " + group.Count());
@@ -889,7 +974,10 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="sb">Report builder.</param>
         /// <param name="title">Section title.</param>
         /// <param name="records">Records to include.</param>
-        private static void AppendRecordSection(StringBuilder sb, string title, IEnumerable<ArtifactExportRecord> records) {
+        private static void AppendRecordSection(
+            StringBuilder sb,
+            string title,
+            IEnumerable<ArtifactExportRecord> records) {
             var list = records.OrderBy(r => r.Target, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(r => r.Kind)
                 .ThenBy(r => r.GroupPath, StringComparer.OrdinalIgnoreCase)
@@ -1129,7 +1217,9 @@ namespace EidoTiaWorkbench.Core.Export {
         /// </summary>
         /// <param name="obj">Openness object that may expose the requested collection property.</param>
         /// <param name="propertyName">Public property name to read.</param>
-        /// <returns>The collection value as <see cref="IEnumerable"/>, or an empty collection when unavailable.</returns>
+        /// <returns>
+        /// The collection value as <see cref="IEnumerable"/>, or an empty collection when unavailable.
+        /// </returns>
         private static IEnumerable GetChildren(object obj, string propertyName) {
             if (obj == null) {
                 return Array.Empty<object>();
@@ -1190,7 +1280,9 @@ namespace EidoTiaWorkbench.Core.Export {
             }
 
             object current = root;
-            foreach (var part in folderPath.Replace("\\", "/").Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) {
+            foreach (var part in folderPath.Replace(
+                "\\",
+                "/").Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) {
                 var next = GetChildren(current, folderCollectionProperty)
                     .Cast<object>()
                     .FirstOrDefault(f => string.Equals(GetName(f), part, StringComparison.OrdinalIgnoreCase));
@@ -1376,7 +1468,10 @@ namespace EidoTiaWorkbench.Core.Export {
             }
 
             AddExceptionData(exception, "ExportKind", kind.ToString());
-            AddExceptionData(exception, "OpennessArtifactType", artifact == null ? string.Empty : artifact.GetType().FullName);
+            AddExceptionData(
+                exception,
+                "OpennessArtifactType",
+                artifact == null ? string.Empty : artifact.GetType().FullName);
             AddExceptionData(exception, "OpennessArtifactName", GetDiagnosticProperty(artifact, "Name"));
             AddExceptionData(exception, "ExportDestination", destination == null ? string.Empty : destination.FullName);
             AddExceptionData(exception, "ExportMethod", method == null ? string.Empty : method.ToString());
@@ -1475,7 +1570,9 @@ namespace EidoTiaWorkbench.Core.Export {
             }
 
             try {
-                var property = artifact.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+                var property = artifact.GetType().GetProperty(
+                    propertyName,
+                    BindingFlags.Instance | BindingFlags.Public);
                 if (property == null || property.GetIndexParameters().Length > 0) {
                     return string.Empty;
                 }
@@ -1652,7 +1749,9 @@ namespace EidoTiaWorkbench.Core.Export {
         /// (different Openness versions use different property names).
         /// </summary>
         /// <param name="plc">PLC software instance to inspect for known tag table root properties.</param>
-        /// <returns>The tag table root group, or <see langword="null"/> when this API build does not expose it.</returns>
+        /// <returns>
+        /// The tag table root group, or <see langword="null"/> when this API build does not expose it.
+        /// </returns>
         private static PlcTagTableGroup TryGetTagTableRoot(PlcSoftware plc) {
             // Openness variants expose different property names.
             var prop = plc.GetType().GetProperty("PlcTagTableGroup");
@@ -1964,7 +2063,8 @@ namespace EidoTiaWorkbench.Core.Export {
 
                 if (item.Kind == ExportKind.Db) {
                     // Always write a .db file for DBs.
-                    var dbText = st ?? SourceExtract.TryExtractDbText(xml) ?? "// No readable DB source found in the exported XML.\r\n";
+                    var dbText = st ?? SourceExtract.TryExtractDbText(
+                        xml) ?? "// No readable DB source found in the exported XML.\r\n";
                     File.WriteAllText(Path.Combine(sourcesDir, baseName + ".db"), dbText, new UTF8Encoding(false));
                     return;
                 }
@@ -2005,7 +2105,9 @@ namespace EidoTiaWorkbench.Core.Export {
             try {
                 this.ExportSingleToFile(item, tmp);
                 if (!File.Exists(tmp)) {
-                    throw new ExportWarningException("Openness did not create a repository payload for this artifact.", item);
+                    throw new ExportWarningException(
+                        "Openness did not create a repository payload for this artifact.",
+                        item);
                 }
 
                 // Read as UTF-8 (Openness typically produces UTF-8 XML).
@@ -2075,7 +2177,9 @@ namespace EidoTiaWorkbench.Core.Export {
 
                     var table = ResolvePlcTagTable(plcForTagTable, groupPath, item.Name);
                     if (table == null) {
-                        throw new ExportWarningException("PLC tag table not found (or not exposed by this Openness build).", item);
+                        throw new ExportWarningException(
+                            "PLC tag table not found (or not exposed by this Openness build).",
+                            item);
                     }
 
                     table.Export(fi, Siemens.Engineering.ExportOptions.WithDefaults);
@@ -2094,7 +2198,12 @@ namespace EidoTiaWorkbench.Core.Export {
                     return;
 
                 case ExportKind.TechnologicalObject:
-                    this.ExportGenericPlcArtifact(project, item, "TechnologicalObjectGroup", "TechnologicalObjects", fi);
+                    this.ExportGenericPlcArtifact(
+                        project,
+                        item,
+                        "TechnologicalObjectGroup",
+                        "TechnologicalObjects",
+                        fi);
                     return;
 
                 case ExportKind.HmiScreen:
@@ -2165,7 +2274,12 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="rootProperty">PLC software property that exposes the root group.</param>
         /// <param name="collectionProperty">Group property containing the artifact collection.</param>
         /// <param name="destination">Destination file passed to Openness.</param>
-        private void ExportGenericPlcArtifact(Project project, ExportItem item, string rootProperty, string collectionProperty, FileInfo destination) {
+        private void ExportGenericPlcArtifact(
+            Project project,
+            ExportItem item,
+            string rootProperty,
+            string collectionProperty,
+            FileInfo destination) {
             var plc = ResolvePlcSoftware(project, item.CpuPath);
             if (plc == null) {
                 throw new InvalidOperationException("Could not resolve PLC software for: " + item.CpuPath);
@@ -2198,7 +2312,8 @@ namespace EidoTiaWorkbench.Core.Export {
             var tableGroup = ResolveTagTableGroup(tagRoot, split.Item1);
             var table = tableGroup == null
                 ? null
-                : tableGroup.TagTables.FirstOrDefault(t => string.Equals(t.Name, split.Item2, StringComparison.OrdinalIgnoreCase));
+                : tableGroup.TagTables.FirstOrDefault(
+                    t => string.Equals(t.Name, split.Item2, StringComparison.OrdinalIgnoreCase));
             var constant = ResolveNamedItem(table, "UserConstants", item.Name);
             if (constant == null) {
                 throw new InvalidOperationException("PLC user constant not found: " + item);
@@ -2215,7 +2330,12 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="rootProperty">HMI target property that exposes the root folder.</param>
         /// <param name="collectionProperty">Folder property containing the artifact collection.</param>
         /// <param name="destination">Destination file passed to Openness.</param>
-        private void ExportHmiFolderArtifact(Project project, ExportItem item, string rootProperty, string collectionProperty, FileInfo destination) {
+        private void ExportHmiFolderArtifact(
+            Project project,
+            ExportItem item,
+            string rootProperty,
+            string collectionProperty,
+            FileInfo destination) {
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
                 throw new InvalidOperationException("Could not resolve HMI target for: " + item.CpuPath);
@@ -2239,7 +2359,12 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="rootProperty">HMI target property that exposes the root object.</param>
         /// <param name="collectionProperty">Root property containing the artifact collection.</param>
         /// <param name="destination">Destination file passed to Openness.</param>
-        private void ExportHmiFlatArtifact(Project project, ExportItem item, string rootProperty, string collectionProperty, FileInfo destination) {
+        private void ExportHmiFlatArtifact(
+            Project project,
+            ExportItem item,
+            string rootProperty,
+            string collectionProperty,
+            FileInfo destination) {
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
                 throw new InvalidOperationException("Could not resolve HMI target for: " + item.CpuPath);
@@ -2261,7 +2386,11 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="item">Artifact identity collected during scan.</param>
         /// <param name="compositionProperty">HMI target property exposing the composition.</param>
         /// <param name="destination">Destination file passed to Openness.</param>
-        private void ExportHmiCompositionArtifact(Project project, ExportItem item, string compositionProperty, FileInfo destination) {
+        private void ExportHmiCompositionArtifact(
+            Project project,
+            ExportItem item,
+            string compositionProperty,
+            FileInfo destination) {
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
                 throw new InvalidOperationException("Could not resolve HMI target for: " + item.CpuPath);
@@ -2290,7 +2419,9 @@ namespace EidoTiaWorkbench.Core.Export {
 
             var composition = GetPropertyValue(target, "GraphicLists");
             if (composition == null) {
-                throw new ExportWarningException("HMI graphic list composition is not exposed by this Openness build.", item);
+                throw new ExportWarningException(
+                    "HMI graphic list composition is not exposed by this Openness build.",
+                    item);
             }
 
             var artifact = ResolveNamedItem(composition, null, item.Name);
@@ -2309,7 +2440,11 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="item">Artifact identity collected during scan.</param>
         /// <param name="singletonProperty">HMI target property exposing the singleton.</param>
         /// <param name="destination">Destination file passed to Openness.</param>
-        private void ExportHmiSingletonArtifact(Project project, ExportItem item, string singletonProperty, FileInfo destination) {
+        private void ExportHmiSingletonArtifact(
+            Project project,
+            ExportItem item,
+            string singletonProperty,
+            FileInfo destination) {
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
                 throw new InvalidOperationException("Could not resolve HMI target for: " + item.CpuPath);

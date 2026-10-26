@@ -80,7 +80,9 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="selection">Artifacts selected for import.</param>
         /// <returns>A result object containing counters, warnings, and item-level errors.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="repoRoot"/> is empty.</exception>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="selection"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="selection"/> is <see langword="null"/>.
+        /// </exception>
         public ImportResult Import(string repoRoot, IReadOnlyCollection<ExportItem> selection) {
             if (string.IsNullOrWhiteSpace(repoRoot)) {
                 throw new ArgumentException("Repo root is required.", nameof(repoRoot));
@@ -111,13 +113,15 @@ namespace EidoTiaWorkbench.Core.Import {
                     // Resolve where Export wrote this artifact.
                     var xmlPath = PathHelper.GetOutputFilePath(repoRoot, item);
                     if (!File.Exists(xmlPath)) {
-                        result.Errors.Add(new ImportError(item, new FileNotFoundException("Export XML not found", xmlPath)));
+                        result.Errors.Add(
+                            new ImportError(item, new FileNotFoundException("Export XML not found", xmlPath)));
                         continue;
                     }
 
                     if (!item.CanImport || !ArtifactCatalog.Get(item.Kind).CanImport) {
                         result.Skipped++;
-                        result.Warnings.Add("Import is not available for " + item + ": " + ArtifactCatalog.Get(item.Kind).Limitations);
+                        result.Warnings.Add(
+                            "Import is not available for " + item + ": " + ArtifactCatalog.Get(item.Kind).Limitations);
                         continue;
                     }
 
@@ -130,7 +134,13 @@ namespace EidoTiaWorkbench.Core.Import {
                             null,
                             null,
                             null);
-                        ImportHmiArtifact(project, artifact, ImportConflictPolicy.Ask, createBackup: true, backupRoot: backupRoot, result: result);
+                        ImportHmiArtifact(
+                            project,
+                            artifact,
+                            ImportConflictPolicy.Ask,
+                            createBackup: true,
+                            backupRoot: backupRoot,
+                            result: result);
                     }
                     else {
                         // Resolve the target PLC software instance.
@@ -224,12 +234,15 @@ namespace EidoTiaWorkbench.Core.Import {
             var ordered = new ImportDependencyPlanner().Build(selection).OrderedArtifacts.ToList();
             var total = ordered.Count;
             var done = 0;
-            this._log.Info("Import started. Artifacts: " + total + ". ConflictPolicy: " + conflictPolicy + ". Backup: " + createBackup + ".");
+            this._log.Info(
+                "Import started. Artifacts: " + total + ". ConflictPolicy: " + conflictPolicy + ". Backup: " +
+                    createBackup + ".");
 
             foreach (var artifact in ordered) {
                 if (cancellationToken.IsCancellationRequested) {
                     result.Cancelled = total - done;
-                    result.Warnings.Add("Import cancelled before remaining artifacts were attempted: " + result.Cancelled + ".");
+                    result.Warnings.Add(
+                        "Import cancelled before remaining artifacts were attempted: " + result.Cancelled + ".");
                     this._log.Warn("Import cancelled. Completed: " + done + ". Remaining: " + result.Cancelled + ".");
                     break;
                 }
@@ -258,10 +271,13 @@ namespace EidoTiaWorkbench.Core.Import {
 
                     if (!artifact.Item.CanImport || !ArtifactCatalog.Get(artifact.Item.Kind).CanImport) {
                         result.Skipped++;
-                        result.Warnings.Add("Import is not available for " + artifact.Item + ": " + ArtifactCatalog.Get(artifact.Item.Kind).Limitations);
+                        result.Warnings.Add(
+                            "Import is not available for " + artifact.Item + ": " + ArtifactCatalog.Get(
+                                artifact.Item.Kind).Limitations);
                         stopwatch.Stop();
                         done++;
-                        this._log.Warn(BuildImportLogLine("Skipped", artifact, strategy, stopwatch.ElapsedMilliseconds));
+                        this._log.Warn(
+                            BuildImportLogLine("Skipped", artifact, strategy, stopwatch.ElapsedMilliseconds));
                         progress?.Invoke(new ImportProgressInfo {
                             Done = done,
                             Total = total,
@@ -280,7 +296,8 @@ namespace EidoTiaWorkbench.Core.Import {
                     else {
                         var plc = ResolvePlcSoftware(project, artifact.Item.CpuPath);
                         if (plc == null) {
-                            throw new InvalidOperationException("Could not resolve PLC software for: " + artifact.Item.CpuPath);
+                            throw new InvalidOperationException(
+                                "Could not resolve PLC software for: " + artifact.Item.CpuPath);
                         }
 
                         var existing = ResolveExistingPlcArtifact(plc, artifact.Item);
@@ -315,9 +332,16 @@ namespace EidoTiaWorkbench.Core.Import {
                     done++;
                     AddImportExceptionContext(ex, artifact, strategy, conflictPolicy, createBackup);
                     string abortWarning;
-                    var abortAfterFailure = this.ShouldAbortImportAfterFailure(ex, result, total, done, out abortWarning);
+                    var abortAfterFailure = this.ShouldAbortImportAfterFailure(
+                        ex,
+                        result,
+                        total,
+                        done,
+                        out abortWarning);
                     result.Errors.Add(new ImportError(artifact.Item, ex));
-                    this._log.Error(BuildImportLogLine("Failed", artifact, strategy, stopwatch.ElapsedMilliseconds), ex);
+                    this._log.Error(
+                        BuildImportLogLine("Failed", artifact, strategy, stopwatch.ElapsedMilliseconds),
+                        ex);
                     if (!string.IsNullOrWhiteSpace(abortWarning)) {
                         this._log.Warn(abortWarning);
                     }
@@ -354,7 +378,9 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="selection"/> is <see langword="null"/>.
         /// </exception>
-        public ImportResult PreviewFiles(IReadOnlyCollection<RepositoryArtifact> selection, ImportConflictPolicy conflictPolicy) {
+        public ImportResult PreviewFiles(
+            IReadOnlyCollection<RepositoryArtifact> selection,
+            ImportConflictPolicy conflictPolicy) {
             if (selection == null) {
                 throw new ArgumentNullException(nameof(selection));
             }
@@ -369,13 +395,17 @@ namespace EidoTiaWorkbench.Core.Import {
                         artifact.State == RepositoryArtifactState.Unsupported) {
                         result.Errors.Add(new ImportError(
                             artifact.Item,
-                            new InvalidOperationException("Artifact cannot be imported because its repository state is " + artifact.State + ".")));
+                            new InvalidOperationException(
+                                "Artifact cannot be imported because its repository state is " + artifact.State +
+                                    ".")));
                         continue;
                     }
 
                     if (!artifact.Item.CanImport || !ArtifactCatalog.Get(artifact.Item.Kind).CanImport) {
                         result.Skipped++;
-                        result.Warnings.Add("Import unsupported: " + artifact.Item + ". " + ArtifactCatalog.Get(artifact.Item.Kind).Limitations);
+                        result.Warnings.Add(
+                            "Import unsupported: " + artifact.Item + ". " + ArtifactCatalog.Get(
+                                artifact.Item.Kind).Limitations);
                         continue;
                     }
 
@@ -384,7 +414,12 @@ namespace EidoTiaWorkbench.Core.Import {
                     }
                     else {
                         var plc = ResolvePlcSoftware(project, artifact.Item.CpuPath);
-                        RecordPreview(artifact.Item, ResolveExistingPlcArtifact(plc, artifact.Item), conflictPolicy, "PLC artifact", result);
+                        RecordPreview(
+                            artifact.Item,
+                            ResolveExistingPlcArtifact(plc, artifact.Item),
+                            conflictPolicy,
+                            "PLC artifact",
+                            result);
                     }
                 }
                 catch (Exception ex) {
@@ -695,7 +730,13 @@ namespace EidoTiaWorkbench.Core.Import {
                     return;
 
                 case ExportKind.TechnologicalObject:
-                    ImportGenericPlcArtifact(plc, item, "TechnologicalObjectGroup", "TechnologicalObjects", fi, replace);
+                    ImportGenericPlcArtifact(
+                        plc,
+                        item,
+                        "TechnologicalObjectGroup",
+                        "TechnologicalObjects",
+                        fi,
+                        replace);
                     return;
 
                 case ExportKind.HmiScreen:
@@ -724,7 +765,9 @@ namespace EidoTiaWorkbench.Core.Import {
             ImportResult result) {
             var item = artifact.Item;
             var target = ResolveRequiredHmiTarget(project, item);
-            var folder = ResolveOrCreateScreenFolder(target.ScreenFolder, NormalizeRootGroupPath(item.Kind, item.GroupPath));
+            var folder = ResolveOrCreateScreenFolder(
+                target.ScreenFolder,
+                NormalizeRootGroupPath(item.Kind, item.GroupPath));
             ImportIntoOwnerCollection(folder, "Screens", artifact, conflictPolicy, createBackup, backupRoot, result);
         }
 
@@ -743,7 +786,8 @@ namespace EidoTiaWorkbench.Core.Import {
             var item = artifact.Item;
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
-                result.Errors.Add(new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
+                result.Errors.Add(
+                    new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
                 return;
             }
 
@@ -774,51 +818,136 @@ namespace EidoTiaWorkbench.Core.Import {
                     return;
 
                 case ExportKind.HmiTemplate:
-                    ImportHmiFolderArtifact(project, artifact, "ScreenTemplateFolder", "ScreenTemplates", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiFolderArtifact(
+                        project,
+                        artifact,
+                        "ScreenTemplateFolder",
+                        "ScreenTemplates",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiPopup:
-                    ImportHmiFolderArtifact(project, artifact, "ScreenPopupFolder", "ScreenPopups", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiFolderArtifact(
+                        project,
+                        artifact,
+                        "ScreenPopupFolder",
+                        "ScreenPopups",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiSlideIn:
-                    ImportHmiFlatArtifact(project, artifact, "ScreenSlideinFolder", "ScreenSlideins", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiFlatArtifact(
+                        project,
+                        artifact,
+                        "ScreenSlideinFolder",
+                        "ScreenSlideins",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiTagTable:
-                    ImportHmiFolderArtifact(project, artifact, "TagFolder", "TagTables", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiFolderArtifact(
+                        project,
+                        artifact,
+                        "TagFolder",
+                        "TagTables",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiConnection:
-                    ImportHmiCompositionArtifact(project, artifact, "Connections", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiCompositionArtifact(
+                        project,
+                        artifact,
+                        "Connections",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiTextList:
-                    ImportHmiCompositionArtifact(project, artifact, "TextLists", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiCompositionArtifact(
+                        project,
+                        artifact,
+                        "TextLists",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiGraphicList:
-                    ImportHmiCompositionArtifact(project, artifact, "GraphicLists", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiCompositionArtifact(
+                        project,
+                        artifact,
+                        "GraphicLists",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiCycle:
-                    ImportHmiCompositionArtifact(project, artifact, "Cycles", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiCompositionArtifact(
+                        project,
+                        artifact,
+                        "Cycles",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiVBScript:
-                    ImportHmiFolderArtifact(project, artifact, "VBScriptFolder", "VBScripts", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiFolderArtifact(
+                        project,
+                        artifact,
+                        "VBScriptFolder",
+                        "VBScripts",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiGlobalElements:
-                    ImportHmiSingletonArtifact(project, artifact, "ScreenGlobalElements", "ImportScreenGlobalElements", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiSingletonArtifact(
+                        project,
+                        artifact,
+                        "ScreenGlobalElements",
+                        "ImportScreenGlobalElements",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 case ExportKind.HmiScreenOverview:
-                    ImportHmiSingletonArtifact(project, artifact, "ScreenOverview", "ImportScreenOverview", conflictPolicy, createBackup, backupRoot, result);
+                    ImportHmiSingletonArtifact(
+                        project,
+                        artifact,
+                        "ScreenOverview",
+                        "ImportScreenOverview",
+                        conflictPolicy,
+                        createBackup,
+                        backupRoot,
+                        result);
                     return;
 
                 default:
-                    throw new InvalidOperationException("No HMI import handler is registered for " + artifact.Item.Kind + ".");
+                    throw new InvalidOperationException(
+                        "No HMI import handler is registered for " + artifact.Item.Kind + ".");
             }
         }
 
@@ -840,15 +969,33 @@ namespace EidoTiaWorkbench.Core.Import {
                     return;
 
                 case ExportKind.HmiTemplate:
-                    PreviewHmiFolderArtifact(project, artifact, "ScreenTemplateFolder", "ScreenTemplates", conflictPolicy, result);
+                    PreviewHmiFolderArtifact(
+                        project,
+                        artifact,
+                        "ScreenTemplateFolder",
+                        "ScreenTemplates",
+                        conflictPolicy,
+                        result);
                     return;
 
                 case ExportKind.HmiPopup:
-                    PreviewHmiFolderArtifact(project, artifact, "ScreenPopupFolder", "ScreenPopups", conflictPolicy, result);
+                    PreviewHmiFolderArtifact(
+                        project,
+                        artifact,
+                        "ScreenPopupFolder",
+                        "ScreenPopups",
+                        conflictPolicy,
+                        result);
                     return;
 
                 case ExportKind.HmiSlideIn:
-                    PreviewHmiFlatArtifact(project, artifact, "ScreenSlideinFolder", "ScreenSlideins", conflictPolicy, result);
+                    PreviewHmiFlatArtifact(
+                        project,
+                        artifact,
+                        "ScreenSlideinFolder",
+                        "ScreenSlideins",
+                        conflictPolicy,
+                        result);
                     return;
 
                 case ExportKind.HmiTagTable:
@@ -886,7 +1033,8 @@ namespace EidoTiaWorkbench.Core.Import {
                 default:
                     result.Errors.Add(new ImportError(
                         artifact.Item,
-                        new InvalidOperationException("No HMI preview handler is registered for " + artifact.Item.Kind + ".")));
+                        new InvalidOperationException(
+                            "No HMI preview handler is registered for " + artifact.Item.Kind + ".")));
                     return;
             }
         }
@@ -914,8 +1062,18 @@ namespace EidoTiaWorkbench.Core.Import {
             var item = artifact.Item;
             var target = ResolveRequiredHmiTarget(project, item);
             var root = GetPropertyValue(target, rootProperty);
-            var folder = ResolveOrCreateGenericGroupByPath(root, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Folders");
-            ImportIntoOwnerCollection(folder, collectionProperty, artifact, conflictPolicy, createBackup, backupRoot, result);
+            var folder = ResolveOrCreateGenericGroupByPath(
+                root,
+                NormalizeRootGroupPath(item.Kind, item.GroupPath),
+                "Folders");
+            ImportIntoOwnerCollection(
+                folder,
+                collectionProperty,
+                artifact,
+                conflictPolicy,
+                createBackup,
+                backupRoot,
+                result);
         }
 
         /// <summary>
@@ -941,7 +1099,14 @@ namespace EidoTiaWorkbench.Core.Import {
             var item = artifact.Item;
             var target = ResolveRequiredHmiTarget(project, item);
             var root = GetPropertyValue(target, rootProperty);
-            ImportIntoOwnerCollection(root, collectionProperty, artifact, conflictPolicy, createBackup, backupRoot, result);
+            ImportIntoOwnerCollection(
+                root,
+                collectionProperty,
+                artifact,
+                conflictPolicy,
+                createBackup,
+                backupRoot,
+                result);
         }
 
         /// <summary>
@@ -1079,7 +1244,8 @@ namespace EidoTiaWorkbench.Core.Import {
             var item = artifact.Item;
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
-                result.Errors.Add(new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
+                result.Errors.Add(
+                    new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
                 return;
             }
 
@@ -1108,7 +1274,8 @@ namespace EidoTiaWorkbench.Core.Import {
             var item = artifact.Item;
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
-                result.Errors.Add(new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
+                result.Errors.Add(
+                    new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
                 return;
             }
 
@@ -1134,7 +1301,8 @@ namespace EidoTiaWorkbench.Core.Import {
             var item = artifact.Item;
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
-                result.Errors.Add(new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
+                result.Errors.Add(
+                    new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
                 return;
             }
 
@@ -1160,7 +1328,8 @@ namespace EidoTiaWorkbench.Core.Import {
             var item = artifact.Item;
             var target = ResolveHmiTarget(project, item.CpuPath);
             if (target == null) {
-                result.Errors.Add(new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
+                result.Errors.Add(
+                    new ImportError(item, new InvalidOperationException("HMI target not found: " + item.CpuPath)));
                 return;
             }
 
@@ -1218,7 +1387,10 @@ namespace EidoTiaWorkbench.Core.Import {
             }
 
             // NOTE: GroupPath may include UI-only roots; if needed, normalize before calling this.
-            var group = ResolveOrCreateGenericGroupByPath(root, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Groups");
+            var group = ResolveOrCreateGenericGroupByPath(
+                root,
+                NormalizeRootGroupPath(item.Kind, item.GroupPath),
+                "Groups");
 
             // group.Types.Import(FileInfo, ImportOptions) or group.Types.Import(FileInfo)
             var typesCollection = GetPropertyValue(group, "Types");
@@ -1233,7 +1405,10 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="xml">XML file to import into the resolved block collection.</param>
         /// <param name="replace">Whether an existing artifact may be overwritten after backup.</param>
         private static void ImportBlock(PlcSoftware plc, ExportItem item, FileInfo xml, bool replace) {
-            var group = ResolveOrCreateGenericGroupByPath(plc.BlockGroup, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Groups");
+            var group = ResolveOrCreateGenericGroupByPath(
+                plc.BlockGroup,
+                NormalizeRootGroupPath(item.Kind, item.GroupPath),
+                "Groups");
 
             // group.Blocks.Import(FileInfo, ImportOptions) or group.Blocks.Import(FileInfo)
             var blocksCollection = GetPropertyValue(group, "Blocks");
@@ -1253,7 +1428,10 @@ namespace EidoTiaWorkbench.Core.Import {
                 throw new InvalidOperationException("PLC tag tables are not exposed by this Openness build.");
             }
 
-            var group = ResolveOrCreateGenericGroupByPath(root, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Groups");
+            var group = ResolveOrCreateGenericGroupByPath(
+                root,
+                NormalizeRootGroupPath(item.Kind, item.GroupPath),
+                "Groups");
 
             var tablesCollection = GetPropertyValue(group, "TagTables");
             InvokeImport(tablesCollection, xml, replace);
@@ -1280,7 +1458,10 @@ namespace EidoTiaWorkbench.Core.Import {
                 throw new InvalidOperationException("PLC root group is not available: " + rootProperty + ".");
             }
 
-            var group = ResolveOrCreateGenericGroupByPath(root, NormalizeRootGroupPath(item.Kind, item.GroupPath), "Groups");
+            var group = ResolveOrCreateGenericGroupByPath(
+                root,
+                NormalizeRootGroupPath(item.Kind, item.GroupPath),
+                "Groups");
             var collection = GetPropertyValue(group, collectionProperty);
             InvokeImport(collection, xml, replace);
         }
@@ -1302,7 +1483,8 @@ namespace EidoTiaWorkbench.Core.Import {
             var tableGroup = ResolveOrCreateGenericGroupByPath(tagRoot, split.Item1, "Groups");
             var table = ResolveNamedItem(tableGroup, "TagTables", split.Item2);
             if (table == null) {
-                throw new InvalidOperationException("PLC tag table for user constant was not found: " + split.Item2 + ".");
+                throw new InvalidOperationException(
+                    "PLC tag table for user constant was not found: " + split.Item2 + ".");
             }
 
             var constants = GetPropertyValue(table, "UserConstants");
@@ -1365,7 +1547,8 @@ namespace EidoTiaWorkbench.Core.Import {
                 }
             }
 
-            throw new NotSupportedException("No Import overload with explicit conflict options is available for " + t.FullName);
+            throw new NotSupportedException(
+                "No Import overload with explicit conflict options is available for " + t.FullName);
         }
 
         /// <summary>
@@ -1504,7 +1687,9 @@ namespace EidoTiaWorkbench.Core.Import {
                     DiagnosticData("OpennessMethodSignature", FormatMethodSignature(method)),
                     DiagnosticData("ImportFile", xml.FullName),
                     DiagnosticData("ImportReplaceRequested", replace),
-                    DiagnosticData("ImportOptionValue", FormatEnumOption(CreateImportOption(method.GetParameters()[1].ParameterType, replace))));
+                    DiagnosticData(
+                        "ImportOptionValue",
+                        FormatEnumOption(CreateImportOption(method.GetParameters()[1].ParameterType, replace))));
                 throw;
             }
         }
@@ -1528,7 +1713,9 @@ namespace EidoTiaWorkbench.Core.Import {
         /// Creates a neutral enum value for optional secondary import options.
         /// </summary>
         /// <param name="parameterType">Parameter type to populate.</param>
-        /// <returns>A neutral enum value, <see cref="Type.Missing"/>, or <see langword="null"/> as appropriate.</returns>
+        /// <returns>
+        /// A neutral enum value, <see cref="Type.Missing"/>, or <see langword="null"/> as appropriate.
+        /// </returns>
         private static object CreateDefaultEnumOption(Type parameterType) {
             if (!parameterType.IsEnum) {
                 return Type.Missing;
@@ -1602,7 +1789,10 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="groupPath">Slash-delimited path relative to the root.</param>
         /// <param name="childCollectionProperty">Property exposing child groups or folders.</param>
         /// <returns>The resolved object, or <see langword="null"/> when any segment is missing.</returns>
-        private static object ResolveGenericGroupByPath(object rootGroup, string groupPath, string childCollectionProperty) {
+        private static object ResolveGenericGroupByPath(
+            object rootGroup,
+            string groupPath,
+            string childCollectionProperty) {
             if (rootGroup == null) {
                 return null;
             }
@@ -1612,10 +1802,13 @@ namespace EidoTiaWorkbench.Core.Import {
             }
 
             object current = rootGroup;
-            foreach (var part in groupPath.Replace("\\", "/").Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) {
+            foreach (var part in groupPath.Replace(
+                "\\",
+                "/").Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) {
                 var next = GetEnumerableProperty(current, childCollectionProperty)
                     .Cast<object>()
-                    .FirstOrDefault(g => string.Equals(GetStringProperty(g, "Name"), part, StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(
+                        g => string.Equals(GetStringProperty(g, "Name"), part, StringComparison.OrdinalIgnoreCase));
                 if (next == null) {
                     return null;
                 }
@@ -1633,7 +1826,10 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="groupPath">Slash-delimited path relative to the root.</param>
         /// <param name="childCollectionProperty">Property exposing child groups or folders.</param>
         /// <returns>The resolved or newly created object.</returns>
-        private static object ResolveOrCreateGenericGroupByPath(object rootGroup, string groupPath, string childCollectionProperty) {
+        private static object ResolveOrCreateGenericGroupByPath(
+            object rootGroup,
+            string groupPath,
+            string childCollectionProperty) {
             if (rootGroup == null) {
                 throw new InvalidOperationException("Root group or folder is not available.");
             }
@@ -1643,10 +1839,13 @@ namespace EidoTiaWorkbench.Core.Import {
             }
 
             object current = rootGroup;
-            foreach (var part in groupPath.Replace("\\", "/").Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) {
+            foreach (var part in groupPath.Replace(
+                "\\",
+                "/").Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) {
                 var next = GetEnumerableProperty(current, childCollectionProperty)
                     .Cast<object>()
-                    .FirstOrDefault(g => string.Equals(GetStringProperty(g, "Name"), part, StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(
+                        g => string.Equals(GetStringProperty(g, "Name"), part, StringComparison.OrdinalIgnoreCase));
                 if (next == null) {
                     var children = GetPropertyValue(current, childCollectionProperty);
                     next = InvokeCreate(children, part);
@@ -1696,7 +1895,8 @@ namespace EidoTiaWorkbench.Core.Import {
 
             var resolved = ResolveNamedItem(collection, null, name);
             if (resolved == null) {
-                throw new InvalidOperationException("The group or folder was created but could not be resolved: " + name);
+                throw new InvalidOperationException(
+                    "The group or folder was created but could not be resolved: " + name);
             }
 
             return resolved;

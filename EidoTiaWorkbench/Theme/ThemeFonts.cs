@@ -16,7 +16,12 @@ namespace EidoTiaWorkbench.Theme {
         private static readonly Font _pageTitleFont = new Font("Segoe UI", 22F, FontStyle.Bold, GraphicsUnit.Point);
         private static readonly Font _sectionTitleFont = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point);
         private static readonly Font _bodyFont = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point);
-        private static readonly Font _secondaryFont = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point);
+        private static readonly Font _secondaryFont = new Font(
+            "Segoe UI",
+            10.5F,
+            FontStyle.Regular,
+            GraphicsUnit.Point);
+
         private static readonly Font _badgeFont = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
 
         /// <summary>

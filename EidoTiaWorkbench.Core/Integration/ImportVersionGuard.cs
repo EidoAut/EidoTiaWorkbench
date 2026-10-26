@@ -23,7 +23,9 @@ namespace EidoTiaWorkbench.Core.Integration {
         /// <exception cref="IOException">The payload or its manifest cannot be read.</exception>
         public static void Validate(string payloadPath, int targetMajor) {
             if (string.Equals(Path.GetExtension(payloadPath), ".xml", StringComparison.OrdinalIgnoreCase)) {
-                using (var reader = XmlReader.Create(payloadPath, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null })) {
+                using (var reader = XmlReader.Create(
+                    payloadPath,
+                    new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null })) {
                     var document = XDocument.Load(reader);
                     foreach (var engineering in document.Descendants().Where(x => x.Name.LocalName == "Engineering")) {
                         Check((string)engineering.Attribute("version"), targetMajor, "XML");
@@ -47,7 +49,9 @@ namespace EidoTiaWorkbench.Core.Integration {
         private static void Check(string source, int targetMajor, string evidence) {
             var major = OpennessDiscovery.ParseVersion(source);
             if (major != 0 && major != targetMajor) {
-                throw new InvalidDataException(evidence + " declares " + source + "; selected adapter is V" + targetMajor + ". Cross-version import is not verified.");
+                throw new InvalidDataException(
+                    evidence + " declares " + source + "; selected adapter is V" + targetMajor +
+                        ". Cross-version import is not verified.");
             }
         }
     }

@@ -48,7 +48,10 @@ namespace EidoTiaWorkbench.Controls {
             const int paintMessage = 0x000F;
             const int printMessage = 0x0317;
             const int printClientMessage = 0x0318;
-            if ((m.Msg != paintMessage && m.Msg != printMessage && m.Msg != printClientMessage) || !this.IsHandleCreated) {
+            if ((m.Msg != paintMessage
+                && m.Msg != printMessage
+                && m.Msg != printClientMessage)
+                || !this.IsHandleCreated) {
                 return;
             }
 
@@ -62,7 +65,9 @@ namespace EidoTiaWorkbench.Controls {
                 graphics.DrawRectangle(pen, 0, 0, this.Width - 1, this.Height - 1);
                 var center = bounds.Left + (bounds.Width / 2);
                 var y = this.Height / 2;
-                graphics.DrawLines(arrow, new[] { new Point(center - 4, y - 2), new Point(center, y + 2), new Point(center + 4, y - 2) });
+                graphics.DrawLines(
+                    arrow,
+                    new[] { new Point(center - 4, y - 2), new Point(center, y + 2), new Point(center + 4, y - 2) });
             }
         }
 
@@ -100,7 +105,12 @@ namespace EidoTiaWorkbench.Controls {
 
             if ((e.State & DrawItemState.Focus) == DrawItemState.Focus) {
                 using (var focus = new Pen(ThemeColors.Primary)) {
-                    e.Graphics.DrawRectangle(focus, e.Bounds.Left, e.Bounds.Top, e.Bounds.Width - 1, e.Bounds.Height - 1);
+                    e.Graphics.DrawRectangle(
+                        focus,
+                        e.Bounds.Left,
+                        e.Bounds.Top,
+                        e.Bounds.Width - 1,
+                        e.Bounds.Height - 1);
                 }
             }
         }

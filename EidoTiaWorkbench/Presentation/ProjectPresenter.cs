@@ -55,9 +55,11 @@ namespace EidoTiaWorkbench.Presentation {
                 async () => {
                     var closeOwned = false;
                     if (state.PortalOwnership == PortalOwnership.Owned) {
+                        var confirmation = "This TIA Portal instance was started by " + ProductInfo.Name +
+                            ". Close it while disconnecting?";
                         var answer = MessageBox.Show(
                             view,
-                            "This TIA Portal instance was started by " + ProductInfo.Name + ". Close it while disconnecting?",
+                            confirmation,
                             "Disconnect",
                             MessageBoxButtons.YesNoCancel,
                             MessageBoxIcon.Question);

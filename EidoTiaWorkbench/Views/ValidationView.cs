@@ -22,11 +22,28 @@ namespace EidoTiaWorkbench.Views {
     /// <summary>Validates repository payloads without requiring or modifying a TIA project.</summary>
     public sealed class ValidationView : UserControl {
         private readonly PathSelectorControl _path = new PathSelectorControl { Dock = DockStyle.Top };
-        private readonly TextBox _report = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Both, Font = new Font("Consolas", 10) };
-        private readonly DataGridView _issues = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, AutoGenerateColumns = false };
-        private readonly SecondaryButton _validate = new SecondaryButton { Text = "Validate workspace (offline)" };
+        private readonly TextBox _report = new TextBox {
+            Dock = DockStyle.Fill,
+            Multiline = true,
+            ReadOnly = true,
+            ScrollBars = ScrollBars.Both,
+            Font = new Font("Consolas", 10),
+        };
 
-        /// <summary>Initializes a new instance of the <see cref="ValidationView"/> class. Creates an offline workspace validator; validation never attaches to TIA.</summary>
+        private readonly DataGridView _issues = new DataGridView {
+            Dock = DockStyle.Fill,
+            ReadOnly = true,
+            AllowUserToAddRows = false,
+            AutoGenerateColumns = false,
+        };
+
+        private readonly SecondaryButton _validate = new SecondaryButton { Text = "Validate workspace (offline)" };
+        private int? _targetMajor;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ValidationView"/> class. Creates an offline workspace
+        /// validator; validation never attaches to TIA.
+        /// </summary>
         public ValidationView() {
             this.Dock = DockStyle.Fill;
             this.Padding = new Padding(ThemeMetrics.Xl);
@@ -38,14 +55,23 @@ namespace EidoTiaWorkbench.Views {
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
             var header = new PageHeader();
-            header.SetText("Validation", "Local XML, manifest and dependency checks. Siemens import compatibility requires a live test.");
+            header.SetText(
+                "Validation",
+                "Local XML, manifest and dependency checks. Siemens import compatibility requires a live test.");
             layout.Controls.Add(header);
             layout.Controls.Add(this._path);
             layout.Controls.Add(this._validate);
             AppTheme.StyleGrid(this._issues);
-            this._issues.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Severity", DataPropertyName = "Severity", Width = 110 });
-            this._issues.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Check", DataPropertyName = "Phase", Width = 150 });
-            this._issues.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Message", DataPropertyName = "Message", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            this._issues.Columns.Add(
+                new DataGridViewTextBoxColumn { HeaderText = "Severity", DataPropertyName = "Severity", Width = 110 });
+            this._issues.Columns.Add(
+                new DataGridViewTextBoxColumn { HeaderText = "Check", DataPropertyName = "Phase", Width = 150 });
+            this._issues.Columns.Add(
+                new DataGridViewTextBoxColumn {
+                    HeaderText = "Message",
+                    DataPropertyName = "Message",
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                });
             this._issues.SelectionChanged += (sender, e) => {
                 var issue = this._issues.CurrentRow?.DataBoundItem as ImportValidationIssue;
                 if (issue != null) {
@@ -57,6 +83,7 @@ namespace EidoTiaWorkbench.Views {
             this.Controls.Add(layout);
             this._validate.Click += async (s, e) => {
                 var path = this._path.SelectedPath;
+                var targetMajor = this._targetMajor;
                 this._validate.Enabled = false;
                 this._report.Text = "Validating workspace...";
                 try {
@@ -67,11 +94,14 @@ namespace EidoTiaWorkbench.Views {
 
                         var inventory = new RepositoryInventoryService(new ManifestService()).Scan(path);
                         var plan = new ImportDependencyPlanner().Build(inventory);
-                        var result = new ImportPreflightValidator().Validate(inventory, plan);
+                        var result = new ImportPreflightValidator().Validate(inventory, plan, targetMajor);
                         return Tuple.Create(inventory.Count, result);
                     });
                     this._issues.DataSource = validation.Item2.Issues.ToList();
-                    this._report.Text = "Offline validation · No engineering changes\r\n" + validation.Item1 + " artifacts · " + validation.Item2.ErrorCount + " errors · " + validation.Item2.WarningCount + " warnings\r\nSelect a result to inspect its artifact and full diagnostic details.";
+                    this._report.Text = "Offline validation · No engineering changes\r\n" + validation.Item1 +
+                        " artifacts · " + validation.Item2.ErrorCount + " errors · " +
+                        validation.Item2.WarningCount +
+                        " warnings\r\nSelect a result to inspect its artifact and full diagnostic details.";
                 }
                 catch (Exception ex) {
                     this._report.Text = "Validation failed: " + ex.Message;
@@ -88,6 +118,9 @@ namespace EidoTiaWorkbench.Views {
         /// <param name="state">Current workspace selection.</param>
         public void Bind(ApplicationState state) {
             this._path.SelectedPath = state.SelectedRepository;
+            this._targetMajor = state.HasOpennessAdapter
+                ? (int?)EidoTiaWorkbench.Core.Integration.OpennessDiscovery.ParseVersion(state.IntegrationVersion)
+                : null;
         }
     }
 }

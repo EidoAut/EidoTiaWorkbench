@@ -142,7 +142,8 @@ namespace EidoTiaWorkbench.Controls {
             this._themeButton.Text = ThemeColors.UseDarkPalette ? "Light mode" : "Dark mode";
             var project = state.ActiveProject;
             this._project.Text = project == null ? "No active project" : project.Name + " | " + project.Path;
-            this._project.Text = this._sectionDescription + "\r\n" + state.IntegrationVersion + " · " + this._project.Text;
+            this._project.Text = this._sectionDescription + "\r\n" + state.IntegrationVersion + " · " +
+                this._project.Text;
             this._toolTip.SetToolTip(this._project, this._project.Text);
             var previousImage = this._activityButton.Image;
             this._activityButton.Image = IconProvider.Get("activity", ThemeColors.TextPrimary, 16);
@@ -186,7 +187,8 @@ namespace EidoTiaWorkbench.Controls {
         /// <returns>The header bitmap, or the application icon as a fallback.</returns>
         private static Image LoadHeaderImage() {
             var resourcePath = Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? AppDomain.CurrentDomain.BaseDirectory,
+                Path.GetDirectoryName(
+                    Assembly.GetExecutingAssembly().Location) ?? AppDomain.CurrentDomain.BaseDirectory,
                 "Resources",
                 "icoEidoTiaWorkbench.png");
             if (File.Exists(resourcePath)) {

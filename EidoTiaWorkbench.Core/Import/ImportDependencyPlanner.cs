@@ -22,7 +22,9 @@ namespace EidoTiaWorkbench.Core.Import {
         /// </summary>
         /// <param name="selection">Repository artifacts selected by the user.</param>
         /// <returns>Ordered artifacts plus dependency warnings and errors.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="selection"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="selection"/> is <see langword="null"/>.
+        /// </exception>
         public ImportDependencyPlan Build(IReadOnlyCollection<RepositoryArtifact> selection) {
             if (selection == null) {
                 throw new ArgumentNullException(nameof(selection));
@@ -33,7 +35,10 @@ namespace EidoTiaWorkbench.Core.Import {
                 .Distinct(new RepositoryArtifactLogicalKeyComparer())
                 .ToList();
             var byKey = artifacts.ToDictionary(a => a.Item.LogicalKey, StringComparer.OrdinalIgnoreCase);
-            var edges = artifacts.ToDictionary(a => a.Item.LogicalKey, a => new HashSet<string>(StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
+            var edges = artifacts.ToDictionary(
+                a => a.Item.LogicalKey,
+                a => new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                StringComparer.OrdinalIgnoreCase);
             var issues = new List<ImportDependencyIssue>();
 
             foreach (var artifact in artifacts) {
@@ -145,7 +150,8 @@ namespace EidoTiaWorkbench.Core.Import {
                 return candidate == ExportKind.PlcTagTable;
             }
 
-            return ArtifactAdapterRegistry.Get(candidate).ImportOrder < ArtifactAdapterRegistry.Get(dependent).ImportOrder &&
+            return ArtifactAdapterRegistry.Get(
+                candidate).ImportOrder < ArtifactAdapterRegistry.Get(dependent).ImportOrder &&
                    candidate != ExportKind.Unsupported;
         }
 
@@ -209,7 +215,9 @@ namespace EidoTiaWorkbench.Core.Import {
 
             temporary.Add(key);
             foreach (var dependencyKey in edges[key]
-                .OrderBy(k => byKey.ContainsKey(k) ? ArtifactAdapterRegistry.Get(byKey[k].Item.Kind).ImportOrder : int.MaxValue)
+                .OrderBy(
+                    k => byKey.ContainsKey(
+                        k) ? ArtifactAdapterRegistry.Get(byKey[k].Item.Kind).ImportOrder : int.MaxValue)
                 .ThenBy(k => k, StringComparer.OrdinalIgnoreCase)) {
                 RepositoryArtifact dependency;
                 if (byKey.TryGetValue(dependencyKey, out dependency)) {

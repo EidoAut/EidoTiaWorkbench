@@ -26,12 +26,22 @@ namespace EidoTiaWorkbench.Controls {
         private readonly ComboBox _operation;
         private readonly TextBox _details;
         private readonly List<ActivityEntry> _entries = new List<ActivityEntry>();
+        private readonly Timer _refreshTimer = new Timer { Interval = 150 };
+        private bool _refreshPending;
         private string _logFilePath;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ActivityLogControl"/> class.
         /// </summary>
         public ActivityLogControl() {
+            this._refreshTimer.Tick += (s, e) => {
+                if (this._refreshPending && this.Visible) {
+                    this._refreshPending = false;
+                    this.RefreshOperations();
+                    this.RefreshGrid();
+                }
+            };
+            this._refreshTimer.Start();
             this.Dock = DockStyle.Fill;
             this.BackColor = ThemeColors.Surface;
             this.Padding = new Padding(10);
@@ -94,17 +104,35 @@ namespace EidoTiaWorkbench.Controls {
             this._grid.CellFormatting += (sender, e) => {
                 if (e.RowIndex >= 0 && this._grid.Columns[e.ColumnIndex].DataPropertyName == "Severity") {
                     var severity = Convert.ToString(e.Value);
-                    e.CellStyle.ForeColor = severity == "Error" ? ThemeColors.Error : severity == "Warning" ? ThemeColors.Warning : ThemeColors.TextPrimary;
+                    e.CellStyle.ForeColor = severity == "Error"
+                        ? ThemeColors.Error
+                        : severity == "Warning"
+                        ? ThemeColors.Warning
+                        : ThemeColors.TextPrimary;
                 }
             };
 
             // Fixed grid column widths preserve scanability; the message column absorbs remaining space.
-            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Time", DataPropertyName = "TimeText", Width = 100 });
-            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Severity", DataPropertyName = "Severity", Width = 112 });
-            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Operation", DataPropertyName = "Operation", Width = 120 });
-            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Artifact", DataPropertyName = "Artifact", Width = 160 });
-            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Target", DataPropertyName = "Target", Width = 160 });
-            this._grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Message", DataPropertyName = "Message", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            this._grid.Columns.Add(
+                new DataGridViewTextBoxColumn { HeaderText = "Time", DataPropertyName = "TimeText", Width = 100 });
+            this._grid.Columns.Add(
+                new DataGridViewTextBoxColumn { HeaderText = "Severity", DataPropertyName = "Severity", Width = 112 });
+            this._grid.Columns.Add(
+                new DataGridViewTextBoxColumn {
+                    HeaderText = "Operation",
+                    DataPropertyName = "Operation",
+                    Width = 120,
+                });
+            this._grid.Columns.Add(
+                new DataGridViewTextBoxColumn { HeaderText = "Artifact", DataPropertyName = "Artifact", Width = 160 });
+            this._grid.Columns.Add(
+                new DataGridViewTextBoxColumn { HeaderText = "Target", DataPropertyName = "Target", Width = 160 });
+            this._grid.Columns.Add(
+                new DataGridViewTextBoxColumn {
+                    HeaderText = "Message",
+                    DataPropertyName = "Message",
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                });
             this._grid.SelectionChanged += (s, e) => this.ShowDetails();
 
             this._details = new TextBox {
@@ -144,13 +172,14 @@ namespace EidoTiaWorkbench.Controls {
         /// </summary>
         /// <param name="entries">Entries to show.</param>
         public void Bind(IEnumerable<ActivityEntry> entries) {
-            this._entries.Clear();
-            if (entries != null) {
-                this._entries.AddRange(entries);
+            var next = (entries ?? Enumerable.Empty<ActivityEntry>()).ToList();
+            if (this._entries.SequenceEqual(next)) {
+                return;
             }
 
-            this.RefreshOperations();
-            this.RefreshGrid();
+            this._entries.Clear();
+            this._entries.AddRange(next);
+            this._refreshPending = true;
         }
 
         /// <summary>
@@ -164,8 +193,16 @@ namespace EidoTiaWorkbench.Controls {
             }
 
             this._entries.Add(entry);
-            this.RefreshOperations();
-            this.RefreshGrid();
+            this._refreshPending = true;
+        }
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                this._refreshTimer.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -183,9 +220,16 @@ namespace EidoTiaWorkbench.Controls {
         /// </summary>
         private void RefreshOperations() {
             var current = this._operation.SelectedItem as string ?? "All operations";
+            var operations = new[] { "All operations" }.Concat(this._entries.Select(e => e.Operation)
+                .Where(op => !string.IsNullOrWhiteSpace(op)).Distinct().OrderBy(op => op)).ToArray();
+            if (this._operation.Items.Cast<string>().SequenceEqual(operations)) {
+                return;
+            }
+
             this._operation.Items.Clear();
             this._operation.Items.Add("All operations");
-            foreach (var op in this._entries.Select(e => e.Operation).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().OrderBy(s => s)) {
+            foreach (var op in this._entries.Select(
+                e => e.Operation).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().OrderBy(s => s)) {
                 this._operation.Items.Add(op);
             }
 

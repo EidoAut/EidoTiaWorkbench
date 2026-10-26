@@ -34,7 +34,12 @@ namespace EidoTiaWorkbench.Presentation {
                     await controller.RefreshPortalInstancesAsync();
                     if (state.PortalInstances.Count > 1) {
                         navigate("Project");
-                        MessageBox.Show(view, "Select the intended TIA Portal instance in Project view.", "Multiple instances", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(
+                            view,
+                            "Select the intended TIA Portal instance in Project view.",
+                            "Multiple instances",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
                         return;
                     }
 

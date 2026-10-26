@@ -255,14 +255,22 @@ namespace EidoTiaWorkbench.Theme {
         private static void DrawTreeNode(object sender, DrawTreeNodeEventArgs e) {
             var tree = (TreeView)sender;
             var selected = tree.SelectedNode == e.Node;
-            var bounds = new Rectangle(e.Node.Bounds.Left, e.Bounds.Top, Math.Max(e.Node.Bounds.Width, tree.ClientSize.Width - e.Node.Bounds.Left), e.Bounds.Height);
+            var bounds = new Rectangle(
+                e.Node.Bounds.Left,
+                e.Bounds.Top,
+                Math.Max(e.Node.Bounds.Width, tree.ClientSize.Width - e.Node.Bounds.Left),
+                e.Bounds.Height);
             using (var brush = new SolidBrush(selected ? ThemeColors.OperationSurface : ThemeColors.InputSurface)) {
                 e.Graphics.FillRectangle(brush, 0, e.Bounds.Top, tree.ClientSize.Width, e.Bounds.Height);
             }
 
             var iconSize = tree.ImageList?.ImageSize.Width ?? 16;
             var checkSize = ThemeMetrics.Scale(tree, 14);
-            var check = new Rectangle(bounds.Left - iconSize - checkSize - 6, bounds.Top + ((bounds.Height - checkSize) / 2), checkSize, checkSize);
+            var check = new Rectangle(
+                bounds.Left - iconSize - checkSize - 6,
+                bounds.Top + ((bounds.Height - checkSize) / 2),
+                checkSize,
+                checkSize);
             if (tree.CheckBoxes) {
                 using (var brush = new SolidBrush(e.Node.Checked ? ThemeColors.Primary : ThemeColors.InputSurface))
                 using (var border = new Pen(ThemeColors.BorderStrong)) {
@@ -271,24 +279,58 @@ namespace EidoTiaWorkbench.Theme {
                 }
 
                 if (e.Node.Checked) {
-                    TextRenderer.DrawText(e.Graphics, "✓", tree.Font, check, ThemeColors.OnPrimary, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                    TextRenderer.DrawText(
+                        e.Graphics,
+                        "✓",
+                        tree.Font,
+                        check,
+                        ThemeColors.OnPrimary,
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
                 }
             }
 
             if (e.Node.Nodes.Count > 0) {
-                var expander = new Rectangle(check.Left - ThemeMetrics.Scale(tree, 20), bounds.Top, ThemeMetrics.Scale(tree, 16), bounds.Height);
-                TextRenderer.DrawText(e.Graphics, e.Node.IsExpanded ? "⌄" : "›", tree.Font, expander, ThemeColors.TextSecondary, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                var expander = new Rectangle(
+                    check.Left - ThemeMetrics.Scale(tree, 20),
+                    bounds.Top,
+                    ThemeMetrics.Scale(tree, 16),
+                    bounds.Height);
+                TextRenderer.DrawText(
+                    e.Graphics,
+                    e.Node.IsExpanded ? "⌄" : "›",
+                    tree.Font,
+                    expander,
+                    ThemeColors.TextSecondary,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             }
 
             if (tree.ImageList != null && tree.ImageList.Images.ContainsKey(e.Node.ImageKey)) {
-                tree.ImageList.Draw(e.Graphics, bounds.Left - iconSize - 2, bounds.Top + ((bounds.Height - iconSize) / 2), tree.ImageList.Images.IndexOfKey(e.Node.ImageKey));
+                tree.ImageList.Draw(
+                    e.Graphics,
+                    bounds.Left - iconSize - 2,
+                    bounds.Top + ((bounds.Height - iconSize) / 2),
+                    tree.ImageList.Images.IndexOfKey(e.Node.ImageKey));
             }
 
             var item = e.Node.Tag as Core.Model.ExportItem;
-            var text = item == null || item.CanExport || item.CanImport ? ThemeColors.TextPrimary : ThemeColors.Disabled;
-            TextRenderer.DrawText(e.Graphics, e.Node.Text, tree.Font, bounds, text, TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            var text = item == null
+                || item.CanExport
+                || item.CanImport
+                ? ThemeColors.TextPrimary
+                : ThemeColors.Disabled;
+            TextRenderer.DrawText(
+                e.Graphics,
+                e.Node.Text,
+                tree.Font,
+                bounds,
+                text,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
             if (selected && tree.Focused) {
-                ControlPaint.DrawFocusRectangle(e.Graphics, bounds, ThemeColors.TextPrimary, ThemeColors.OperationSurface);
+                ControlPaint.DrawFocusRectangle(
+                    e.Graphics,
+                    bounds,
+                    ThemeColors.TextPrimary,
+                    ThemeColors.OperationSurface);
             }
         }
 
@@ -297,13 +339,15 @@ namespace EidoTiaWorkbench.Theme {
                 e.Graphics.FillRectangle(brush, e.Bounds);
             }
 
+            var textFlags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis |
+                TextFormatFlags.NoPrefix;
             TextRenderer.DrawText(
                 e.Graphics,
                 e.Header.Text,
                 ((ListView)sender).Font,
                 Rectangle.Inflate(e.Bounds, -8, 0),
                 ThemeColors.TextPrimary,
-                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+                textFlags);
             using (var pen = new Pen(ThemeColors.BorderStrong)) {
                 e.Graphics.DrawLine(pen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
             }
@@ -321,13 +365,15 @@ namespace EidoTiaWorkbench.Theme {
                 e.Graphics.FillRectangle(brush, e.Bounds);
             }
 
+            var textFlags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis |
+                TextFormatFlags.NoPrefix;
             TextRenderer.DrawText(
                 e.Graphics,
                 e.SubItem.Text,
                 ((ListView)sender).Font,
                 Rectangle.Inflate(e.Bounds, -8, 0),
                 ThemeColors.TextPrimary,
-                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+                textFlags);
             if (e.ColumnIndex == 0 && e.Item.Focused && ((ListView)sender).Focused) {
                 e.DrawFocusRectangle(e.Item.Bounds);
             }
@@ -359,7 +405,8 @@ namespace EidoTiaWorkbench.Theme {
             }
 
             try {
-                using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")) {
+                using (var key = Registry.CurrentUser.OpenSubKey(
+                    @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")) {
                     var value = key == null ? null : key.GetValue("AppsUseLightTheme");
                     if (value is int) {
                         return ((int)value) == 0;
@@ -380,7 +427,12 @@ namespace EidoTiaWorkbench.Theme {
         /// <param name="previous">Previous palette, or <see langword="null"/> when not switching themes.</param>
         private static void ApplyControlTheme(Control control, ThemePalette previous) {
             ReplacePaletteColors(control, previous);
-            if (control is TreeView || control is ListView || control is TextBox || control is DataGridView || (control is ScrollableControl && ((ScrollableControl)control).AutoScroll)) {
+            if (control is TreeView
+                || control is ListView
+                || control is TextBox
+                || control is DataGridView
+                || (control is ScrollableControl
+                && ((ScrollableControl)control).AutoScroll)) {
                 NativeControlTheme.Apply(control);
             }
 
@@ -445,7 +497,9 @@ namespace EidoTiaWorkbench.Theme {
 
             var radioButton = control as RadioButton;
             if (radioButton != null) {
-                radioButton.BackColor = radioButton.Parent == null ? ThemeColors.Background : radioButton.Parent.BackColor;
+                radioButton.BackColor = radioButton.Parent == null
+                    ? ThemeColors.Background
+                    : radioButton.Parent.BackColor;
                 radioButton.ForeColor = ThemeColors.TextPrimary;
             }
 

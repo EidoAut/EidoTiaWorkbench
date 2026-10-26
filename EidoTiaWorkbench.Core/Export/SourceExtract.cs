@@ -223,7 +223,8 @@ namespace EidoTiaWorkbench.Core.Export {
                     // Variables are often represented as Symbol/Access/Operand nodes.
                     // We capture "name-ish" attribute values as a lightweight sample.
                     var vars = n.Descendants()
-                        .Where(e => NameContains(e, "Symbol") || NameContains(e, "Access") || NameContains(e, "Operand"))
+                        .Where(
+                            e => NameContains(e, "Symbol") || NameContains(e, "Access") || NameContains(e, "Operand"))
                         .SelectMany(e => e.Attributes().Select(a => a.Value))
                         .Where(v => !string.IsNullOrWhiteSpace(v) && v.Length <= 80)
                         .Distinct()
@@ -255,7 +256,9 @@ namespace EidoTiaWorkbench.Core.Export {
         /// </summary>
         /// <param name="e">XML element whose local name is inspected.</param>
         /// <param name="token">Text fragment to search in the local element name.</param>
-        /// <returns><see langword="true"/> when the element name contains the token; otherwise <see langword="false"/>.</returns>
+        /// <returns>
+        /// <see langword="true"/> when the element name contains the token; otherwise <see langword="false"/>.
+        /// </returns>
         private static bool NameContains(XElement e, string token) {
             return e != null && e.Name.LocalName.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0;
         }

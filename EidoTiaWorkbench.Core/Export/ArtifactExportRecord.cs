@@ -25,7 +25,9 @@ namespace EidoTiaWorkbench.Core.Export {
         /// </summary>
         /// <param name="item">Scanned artifact identity.</param>
         /// <param name="status">Final status assigned to this artifact.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="item"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
         public ArtifactExportRecord(ExportItem item, ArtifactExportStatus status) {
             if (item == null) {
                 throw new ArgumentNullException(nameof(item));

@@ -35,7 +35,9 @@ namespace EidoTiaWorkbench.Presentation {
             view.DryRunRequested += (s, e) => FireAndReport(
                 view,
                 async () => {
-                    var summary = await controller.PreviewImportRepositoryArtifactsAsync(view.SelectedArtifacts, view.ConflictPolicy);
+                    var summary = await controller.PreviewImportRepositoryArtifactsAsync(
+                        view.SelectedArtifacts,
+                        view.ConflictPolicy);
                     summary.Messages.Add("Dry run only. No objects will be imported.");
                     using (var form = new OperationSummaryForm(summary, confirmMode: false)) {
                         form.ShowDialog(view);
@@ -57,7 +59,10 @@ namespace EidoTiaWorkbench.Presentation {
                         }
                     }
 
-                    await controller.ImportRepositoryArtifactsAsync(selected, view.ConflictPolicy, view.CreateBackupBeforeImport);
+                    await controller.ImportRepositoryArtifactsAsync(
+                        selected,
+                        view.ConflictPolicy,
+                        view.CreateBackupBeforeImport);
                 });
         }
 
@@ -81,8 +86,10 @@ namespace EidoTiaWorkbench.Presentation {
             };
 
             summary.Messages.Add("New objects: " + selected.Count(a => a.State == RepositoryArtifactState.New));
-            summary.Messages.Add("Objects that will be replaced: " + selected.Count(a => a.State == RepositoryArtifactState.Modified));
-            summary.Messages.Add("Objects omitted: " + selected.Count(a => a.State == RepositoryArtifactState.Unsupported));
+            summary.Messages.Add(
+                "Objects that will be replaced: " + selected.Count(a => a.State == RepositoryArtifactState.Modified));
+            summary.Messages.Add(
+                "Objects omitted: " + selected.Count(a => a.State == RepositoryArtifactState.Unsupported));
             foreach (var warning in selected.Where(a => !string.IsNullOrWhiteSpace(a.Warning))) {
                 summary.Messages.Add("Warning: " + warning.Item.Name + " - " + warning.Warning);
             }

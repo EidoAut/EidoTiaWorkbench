@@ -41,23 +41,25 @@ namespace EidoTiaWorkbench.Controls {
             };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 14F));
 
             this._title = new Label {
                 Dock = DockStyle.Fill,
                 Font = ThemeFonts.SectionTitle,
                 ForeColor = ThemeColors.TextPrimary,
                 AutoEllipsis = true,
-                AutoSize = true,
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft,
             };
             this._artifact = new Label {
                 Dock = DockStyle.Fill,
                 Font = ThemeFonts.Secondary,
                 ForeColor = ThemeColors.TextSecondary,
                 AutoEllipsis = true,
-                AutoSize = true,
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft,
             };
             this._progress = new ThemedProgressBar {
                 Dock = DockStyle.Top,
@@ -95,7 +97,14 @@ namespace EidoTiaWorkbench.Controls {
             operation = operation ?? CurrentOperationInfo.Idle;
             this.Visible = operation.IsBusy;
             this._title.Text = string.IsNullOrWhiteSpace(operation.StatusText) ? operation.Name : operation.StatusText;
-            this._artifact.Text = string.IsNullOrWhiteSpace(operation.CurrentArtifact) ? "Waiting for the engineering operation to complete. You can review Activity for details." : operation.CurrentArtifact;
+            if (!operation.IsIndeterminate && operation.Maximum > 0) {
+                this._title.Text += " (" + operation.Progress + " / " + operation.Maximum + ")";
+            }
+
+            this._artifact.Text = string.IsNullOrWhiteSpace(
+                operation.CurrentArtifact)
+                    ? "Waiting for the engineering operation to complete. You can review Activity for details."
+                    : operation.CurrentArtifact;
             this._progress.Style = operation.IsIndeterminate ? ProgressBarStyle.Marquee : ProgressBarStyle.Continuous;
             this._progress.Maximum = System.Math.Max(1, operation.Maximum);
             if (!operation.IsIndeterminate) {

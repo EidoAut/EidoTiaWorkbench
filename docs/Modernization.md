@@ -33,9 +33,12 @@ there is no unnecessary frontend framework migration.
 
 Inherited anonymous pipes are used instead of named pipes: only the spawned
 process receives the redirected handles and there is no discoverable endpoint.
-Protocol 1 has explicit DataContract types, XML DTD prohibition and 64 MiB frame
+Protocol 2 has explicit DataContract types, XML DTD prohibition and 64 MiB frame
 limits. No BinaryFormatter, arbitrary type activation or Siemens objects cross it.
-Commands are serialized. Progress and durable log messages return during execution.
+Commands are serialized and correlated by request ID, including cancellation.
+Progress and log observer failures are isolated while the terminal response is drained.
+Malformed or mismatched responses invalidate the channel; client and worker must be
+updated together. Progress and durable log messages return during execution.
 Cancel requests use the independent write channel and are acknowledged only after
 safe completion. EOF initiates cooperative cancellation and session cleanup.
 A disconnected worker reports uncertainty; it never automatically replays imports.

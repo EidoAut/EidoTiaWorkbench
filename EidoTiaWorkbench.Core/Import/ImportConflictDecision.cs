@@ -32,7 +32,8 @@ namespace EidoTiaWorkbench.Core.Import {
             }
 
             if (policy == ImportConflictPolicy.Ask) {
-                throw new InvalidOperationException("Existing artifact requires an explicit Replace or Skip decision. No replacement was performed.");
+                throw new InvalidOperationException(
+                    "Existing artifact requires an explicit Replace or Skip decision. No replacement was performed.");
             }
 
             return true;

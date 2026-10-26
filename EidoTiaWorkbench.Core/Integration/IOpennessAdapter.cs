@@ -48,7 +48,9 @@ namespace EidoTiaWorkbench.Core.Integration {
         /// <returns>Current portal, project and target descriptions.</returns>
         Task<TiaProjectInfo> GetProjectInfoAsync();
 
-        /// <summary>Executes a serialized command off the UI thread; cancellation waits for safe worker completion.</summary>
+        /// <summary>
+        /// Executes a serialized command off the UI thread; cancellation waits for safe worker completion.
+        /// </summary>
         /// <param name="request">Versioned operation and artifact identities.</param>
         /// <param name="token">Cancellation between items, never forced termination.</param>
         /// <param name="progress">Callback on the calling background thread.</param>

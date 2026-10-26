@@ -22,7 +22,9 @@ namespace EidoTiaWorkbench.Core.Inventory {
         /// <param name="repositoryPath">Absolute path to the XML file in the repository.</param>
         /// <param name="relativePath">Repository-relative path used as the manifest key.</param>
         /// <param name="state">Comparison state calculated for the artifact.</param>
-        /// <param name="sha256">Current SHA-256 hash of the XML file, or <see langword="null"/> if hashing failed.</param>
+        /// <param name="sha256">
+        /// Current SHA-256 hash of the XML file, or <see langword="null"/> if hashing failed.
+        /// </param>
         /// <param name="lastExportUtc">UTC timestamp recorded in the manifest for the last export.</param>
         /// <param name="warning">Optional warning explaining unsupported or invalid repository content.</param>
         /// <exception cref="ArgumentNullException">

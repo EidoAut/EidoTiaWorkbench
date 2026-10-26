@@ -35,18 +35,23 @@ namespace EidoTiaWorkbench.Forms {
         private readonly StatusStrip _statusStrip;
         private readonly ToolStripStatusLabel _statusLabel;
         private readonly ToolStripStatusLabel _repositoryLabel;
-        private readonly ToolStripProgressBar _progress;
+        private readonly Timer _refreshTimer = new Timer { Interval = 100 };
         private readonly ToastNotification _toast;
-        private readonly Dictionary<string, UserControl> _views = new Dictionary<string, UserControl>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, UserControl> _views = new Dictionary<string, UserControl>(
+            StringComparer.OrdinalIgnoreCase);
+
         private readonly List<object> _presenters = new List<object>();
         private readonly Dictionary<Control, bool> _busyControls = new Dictionary<Control, bool>();
         private readonly bool _discoverOnLoad;
+        private bool _refreshPending;
         private string _currentViewKey;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainShellForm"/> class.
         /// </summary>
-        /// <param name="discoverOnLoad">Whether to enumerate TIA instances on startup; false keeps visual probes offline.</param>
+        /// <param name="discoverOnLoad">
+        /// Whether to enumerate TIA instances on startup; false keeps visual probes offline.
+        /// </param>
         public MainShellForm(bool discoverOnLoad = true) {
             this._discoverOnLoad = discoverOnLoad;
             AppTheme.ApplyTo(this);
@@ -144,21 +149,21 @@ namespace EidoTiaWorkbench.Forms {
                 Font = ThemeFonts.Secondary,
                 BackColor = ThemeColors.Surface,
             };
-            this._statusLabel = new ToolStripStatusLabel("Ready") { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
-            this._repositoryLabel = new ToolStripStatusLabel(string.Empty);
-            this._progress = new ToolStripProgressBar {
-                Minimum = 0,
-                Maximum = 1,
-                Value = 0,
-
-                // Status-strip progress keeps a compact fixed width while labels take the remaining space.
-                Width = 160,
-                Visible = false,
+            this._statusLabel = new ToolStripStatusLabel(
+                "Ready") {
+                Spring = true,
+                TextAlign = ContentAlignment.MiddleLeft,
             };
+            this._repositoryLabel = new ToolStripStatusLabel(string.Empty);
             this._statusStrip.Items.Add(this._statusLabel);
             this._statusStrip.Items.Add(this._repositoryLabel);
-            this._statusStrip.Items.Add(this._progress);
-            var diagnostics = new ToolStripStatusLabel("Activity") { IsLink = true, LinkColor = ThemeColors.Primary, ActiveLinkColor = ThemeColors.PrimaryHover, Margin = new Padding(16, 0, 8, 0) };
+            var diagnostics = new ToolStripStatusLabel(
+                "Activity") {
+                IsLink = true,
+                LinkColor = ThemeColors.Primary,
+                ActiveLinkColor = ThemeColors.PrimaryHover,
+                Margin = new Padding(16, 0, 8, 0),
+            };
             diagnostics.Click += (sender, e) => this.ToggleActivityDrawer();
             this._statusStrip.Items.Add(diagnostics);
 
@@ -231,6 +236,7 @@ namespace EidoTiaWorkbench.Forms {
         /// <param name="disposing">Whether managed resources should be released.</param>
         protected override void Dispose(bool disposing) {
             if (disposing) {
+                this._refreshTimer.Dispose();
                 this._controller.Dispose();
             }
 
@@ -241,7 +247,9 @@ namespace EidoTiaWorkbench.Forms {
         /// Determines whether restored bounds overlap any currently available screen.
         /// </summary>
         /// <param name="bounds">Window bounds to validate.</param>
-        /// <returns><see langword="true"/> when the bounds are visible on a screen; otherwise <see langword="false"/>.</returns>
+        /// <returns>
+        /// <see langword="true"/> when the bounds are visible on a screen; otherwise <see langword="false"/>.
+        /// </returns>
         private static bool IntersectsAnyScreen(Rectangle bounds) {
             foreach (var screen in Screen.AllScreens) {
                 if (screen.WorkingArea.IntersectsWith(bounds)) {
@@ -340,13 +348,26 @@ namespace EidoTiaWorkbench.Forms {
         /// Connects application state changes to shell refreshes.
         /// </summary>
         private void WireState() {
+            this._refreshTimer.Tick += (s, e) => {
+                if (this._refreshPending) {
+                    this._refreshPending = false;
+                    this.UpdateShellFromState();
+                }
+            };
+            this._refreshTimer.Start();
             this._state.StateChanged += (s, e) => {
                 if (this.InvokeRequired) {
                     this.BeginInvoke(new Action(this.UpdateShellFromState));
                     return;
                 }
 
-                this.UpdateShellFromState();
+                if (this._state.CurrentOperation.IsBusy) {
+                    this._refreshPending = true;
+                }
+                else {
+                    this._refreshPending = false;
+                    this.UpdateShellFromState();
+                }
             };
         }
 
@@ -355,10 +376,15 @@ namespace EidoTiaWorkbench.Forms {
         /// </summary>
         private void UpdateShellFromState() {
             this._header.Bind(this._state);
-            this.Text = ProductInfo.Name + " | " + (this._controller.SelectedInstallation == null ? "Offline" : "TIA V" + this._controller.SelectedInstallation.MajorVersion);
+            this.Text = ProductInfo.Name + " | " + (this._controller.SelectedInstallation == null
+                ? "Offline"
+                : "TIA V" + this._controller.SelectedInstallation.MajorVersion);
             this._overlay.Bind(this._state.CurrentOperation);
-            this.UseWaitCursor = this._state.CurrentOperation.IsBusy;
-            Cursor.Current = this._state.CurrentOperation.IsBusy ? Cursors.WaitCursor : Cursors.Default;
+            if (!this._contentSplit.Panel2Collapsed) {
+                this._activityDrawer.Bind(this._state.Activity);
+            }
+
+            this.UseWaitCursor = false;
             if (!this._state.CurrentOperation.IsBusy) {
                 foreach (var pair in this._busyControls) {
                     if (!pair.Key.IsDisposed) {
@@ -370,7 +396,10 @@ namespace EidoTiaWorkbench.Forms {
             }
 
             this._statusLabel.Text = this._state.CurrentOperation.IsBusy
-                ? (string.IsNullOrWhiteSpace(this._state.CurrentOperation.StatusText) ? this._state.CurrentOperation.Name : this._state.CurrentOperation.StatusText) + " " + this._state.CurrentOperation.CurrentArtifact
+                ? (string.IsNullOrWhiteSpace(
+                    this._state.CurrentOperation.StatusText)
+                        ? this._state.CurrentOperation.Name
+                        : this._state.CurrentOperation.StatusText) + " " + this._state.CurrentOperation.CurrentArtifact
                 : (this._state.LastOperationResult ?? "Ready");
             this._statusLabel.ToolTipText = this._statusLabel.Text;
             if (this._statusLabel.Text.Length > 120) {
@@ -380,13 +409,6 @@ namespace EidoTiaWorkbench.Forms {
             this._repositoryLabel.Text = string.IsNullOrWhiteSpace(this._state.SelectedRepository)
                 ? this._state.IntegrationVersion
                 : this._state.IntegrationVersion + " | " + this._state.PortalConnectionState;
-            this._progress.Visible = this._state.CurrentOperation.IsBusy;
-            this._progress.Style = this._state.CurrentOperation.IsIndeterminate ? ProgressBarStyle.Marquee : ProgressBarStyle.Continuous;
-            this._progress.Maximum = Math.Max(1, this._state.CurrentOperation.Maximum);
-            if (!this._state.CurrentOperation.IsIndeterminate) {
-                this._progress.Value = Math.Min(this._progress.Maximum, Math.Max(0, this._state.CurrentOperation.Progress));
-            }
-
             this.RefreshCurrentView();
         }
 
@@ -423,12 +445,15 @@ namespace EidoTiaWorkbench.Forms {
             }
 
             this.ApplyCommandAvailability(this._views[this._currentViewKey]);
-            AppTheme.ApplyThemeTree(this._views[this._currentViewKey]);
         }
 
         /// <summary>Applies current command availability to all buttons in a view.</summary>
         /// <param name="root">Visible control subtree to update on the UI thread.</param>
         private void ApplyCommandAvailability(Control root) {
+            if (root is ActivityView || root is ActivityLogControl) {
+                return;
+            }
+
             foreach (Control child in root.Controls) {
                 var button = child as Button;
                 if (button != null) {
@@ -507,6 +532,7 @@ namespace EidoTiaWorkbench.Forms {
             this._header.Bind(this._state);
             view.Dock = DockStyle.Fill;
             this._viewHost.Controls.Add(view);
+            AppTheme.ApplyThemeTree(view);
             this.RefreshCurrentView();
         }
 
@@ -543,7 +569,9 @@ namespace EidoTiaWorkbench.Forms {
             this._statusLabel.ForeColor = ThemeColors.TextSecondary;
             this._repositoryLabel.ForeColor = ThemeColors.TextSecondary;
             this._header.Bind(this._state);
-            this.Text = ProductInfo.Name + " | " + (this._controller.SelectedInstallation == null ? "Offline" : "TIA V" + this._controller.SelectedInstallation.MajorVersion);
+            this.Text = ProductInfo.Name + " | " + (this._controller.SelectedInstallation == null
+                ? "Offline"
+                : "TIA V" + this._controller.SelectedInstallation.MajorVersion);
             this._sidebar.SetActive(this._currentViewKey);
             this.RefreshCurrentView();
         }
@@ -600,7 +628,11 @@ namespace EidoTiaWorkbench.Forms {
 
                 if (parts.Length >= 6) {
                     float savedDpi;
-                    if (float.TryParse(parts[5], NumberStyles.Float, CultureInfo.InvariantCulture, out savedDpi) && savedDpi > 0) {
+                    if (float.TryParse(
+                        parts[5],
+                        NumberStyles.Float,
+                        CultureInfo.InvariantCulture,
+                        out savedDpi) && savedDpi > 0) {
                         var scale = this.GetCurrentDpi() / savedDpi;
                         bounds = new Rectangle(
                             bounds.X,

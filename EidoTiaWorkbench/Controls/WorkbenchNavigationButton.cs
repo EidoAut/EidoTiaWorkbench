@@ -24,7 +24,11 @@ namespace EidoTiaWorkbench.Controls {
         protected override void OnPaint(PaintEventArgs e) {
             e.Graphics.Clear(this.Parent?.BackColor ?? ThemeColors.Sidebar);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            var fill = this.Selected ? ThemeColors.OperationSurface : this.IsPointerOver ? ThemeColors.SurfaceSecondary : ThemeColors.Sidebar;
+            var fill = this.Selected
+                ? ThemeColors.OperationSurface
+                : this.IsPointerOver
+                ? ThemeColors.SurfaceSecondary
+                : ThemeColors.Sidebar;
             var accent = this.Selected ? ThemeColors.Primary : ThemeColors.Border;
             using (var path = RoundedDrawing.Path(new RectangleF(1, 1, this.Width - 3, this.Height - 3), 6))
             using (var brush = new SolidBrush(fill))
@@ -34,21 +38,33 @@ namespace EidoTiaWorkbench.Controls {
             }
 
             var scale = Math.Max(this.DeviceDpi / 96F, this.Font.Size / ThemeFonts.Body.Size);
-            var icon = new Rectangle((int)(14 * scale), (this.Height - (int)(24 * scale)) / 2, (int)(24 * scale), (int)(24 * scale));
+            var icon = new Rectangle(
+                (int)(14 * scale),
+                (this.Height - (int)(24 * scale)) / 2,
+                (int)(24 * scale),
+                (int)(24 * scale));
             using (var brush = new SolidBrush(ThemeColors.SurfaceSecondary)) {
                 e.Graphics.FillRectangle(brush, icon);
             }
 
             var monogram = this.Text.Length > 1 ? this.Text.Substring(0, 2).ToUpperInvariant() : this.Text;
-            TextRenderer.DrawText(e.Graphics, monogram, this.Font, icon, ThemeColors.Primary, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(
+                e.Graphics,
+                monogram,
+                this.Font,
+                icon,
+                ThemeColors.Primary,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
             var bounds = new Rectangle(icon.Right + 12, 0, Math.Max(0, this.Width - icon.Right - 18), this.Height);
+            var textFlags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis |
+                TextFormatFlags.NoPrefix;
             TextRenderer.DrawText(
                 e.Graphics,
                 this.Text,
                 this.Font,
                 bounds,
                 this.Selected ? ThemeColors.TextPrimary : ThemeColors.TextSecondary,
-                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+                textFlags);
             if (this.Selected) {
                 using (var brush = new SolidBrush(ThemeColors.Primary)) {
                     e.Graphics.FillRectangle(brush, 2, 9, 3, this.Height - 18);

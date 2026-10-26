@@ -13,13 +13,20 @@ using System.Linq;
 using System.Runtime.Serialization;
 
 namespace EidoTiaWorkbench.Core.Integration {
-    /// <summary>Persists selection outside engineering repositories; manual selection never silently falls back.</summary>
+    /// <summary>
+    /// Persists selection outside engineering repositories; manual selection never silently falls back.
+    /// </summary>
     [DataContract]
     public sealed class IntegrationSettings {
         /// <summary>Gets the per-user settings path outside engineering repositories.</summary>
-        public static string DefaultPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EidoTiaWorkbench", "integration.xml");
+        public static string DefaultPath => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "EidoTiaWorkbench",
+            "integration.xml");
 
-        /// <summary>Gets or sets the manually selected API directory; null or empty requests automatic selection.</summary>
+        /// <summary>
+        /// Gets or sets the manually selected API directory; null or empty requests automatic selection.
+        /// </summary>
         [DataMember]
         public string SelectedApiPath {
             get; set;
@@ -80,7 +87,8 @@ namespace EidoTiaWorkbench.Core.Integration {
             var eligible = installations.Where(x => x.CanUse);
             return string.IsNullOrWhiteSpace(this.SelectedApiPath)
                 ? eligible.OrderByDescending(x => x.MajorVersion).FirstOrDefault()
-                : eligible.FirstOrDefault(x => string.Equals(x.ApiPath, this.SelectedApiPath, StringComparison.OrdinalIgnoreCase));
+                : eligible.FirstOrDefault(
+                    x => string.Equals(x.ApiPath, this.SelectedApiPath, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

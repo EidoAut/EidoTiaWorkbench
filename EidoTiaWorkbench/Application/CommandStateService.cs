@@ -62,7 +62,11 @@ namespace EidoTiaWorkbench.Application {
         /// </summary>
         public bool CanExport {
             get {
-                return this.CanStartOperation && this._state.LastScan.Count > 0 && !string.IsNullOrWhiteSpace(this._state.SelectedRepository);
+                return this.CanStartOperation && this._state.ScanState == ScanState.Ready &&
+                    this._state.ActiveProject != null &&
+                    this._state.PortalConnectionState == PortalConnectionState.Connected &&
+                    this._state.LastScan.Count > 0 && !string.IsNullOrWhiteSpace(
+                    this._state.SelectedRepository);
             }
         }
 
@@ -71,7 +75,9 @@ namespace EidoTiaWorkbench.Application {
         /// </summary>
         public bool CanImport {
             get {
-                return this.CanStartOperation && this._state.RepositoryInventory.Count > 0 && this._state.ActiveProject != null;
+                return this.CanStartOperation
+                    && this._state.RepositoryInventory.Count > 0
+                    && this._state.ActiveProject != null;
             }
         }
 

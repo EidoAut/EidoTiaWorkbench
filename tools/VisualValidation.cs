@@ -23,6 +23,12 @@ namespace EidoTiaWorkbench.VisualTests {
         [STAThread]
         private static int Main(string[] args) {
             try {
+                if (args.Length > 0 && args[0].StartsWith("--fixture-", StringComparison.Ordinal)) {
+                    AuditRegressionTests.Run(args);
+                    return 0;
+                }
+
+                AuditRegressionTests.Run(new string[0]);
                 System.Windows.Forms.Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
                 System.Windows.Forms.Application.EnableVisualStyles();
                 System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
@@ -113,6 +119,8 @@ namespace EidoTiaWorkbench.VisualTests {
                             }
                         }
 
+                        CheckBusyInteraction(form, navigate, destination, scale);
+
                         if (AppDomain.CurrentDomain.GetAssemblies().Any(x => x.GetName().Name.StartsWith("Siemens."))) {
                             throw new InvalidOperationException("Desktop loaded proprietary assemblies.");
                         }
@@ -139,6 +147,80 @@ namespace EidoTiaWorkbench.VisualTests {
             catch (Exception ex) {
                 Console.WriteLine(ex);
                 return 1;
+            }
+        }
+
+        /// <summary>Checks busy progress layout and Activity access while synthetic log events arrive.</summary>
+        private static void CheckBusyInteraction(MainShellForm form, MethodInfo navigate, string destination, float scale) {
+            var state = (EidoTiaWorkbench.Application.ApplicationState)typeof(MainShellForm)
+                .GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(form);
+            foreach (var phase in new[] {
+                EidoTiaWorkbench.Application.OperationState.Exporting,
+                EidoTiaWorkbench.Application.OperationState.Importing,
+            }) {
+                var page = phase == EidoTiaWorkbench.Application.OperationState.Exporting ? "Export" : "Import";
+                navigate.Invoke(form, new object[] { page });
+                state.CurrentOperation = new EidoTiaWorkbench.Application.CurrentOperationInfo {
+                    IsBusy = true,
+                    State = phase,
+                    Name = phase.ToString(),
+                    StatusText = phase + " artifacts...",
+                    CurrentArtifact = "CPU / Blocks / FB_Test",
+                    Maximum = 100,
+                    Progress = 25,
+                    CanCancel = true,
+                };
+                for (var i = 0; i < 500; i++) {
+                    state.AddActivity(new EidoTiaWorkbench.Application.ActivityEntry {
+                        Time = DateTime.Now,
+                        Operation = "Busy probe",
+                        Message = "Artifact " + i,
+                    });
+                }
+
+                PumpUi();
+                var overlay = Descendants(form).OfType<EidoTiaWorkbench.Controls.OperationOverlay>().Single();
+                foreach (var label in Descendants(overlay).OfType<Label>()) {
+                    if (!label.Visible || label.Height < label.Font.Height || string.IsNullOrWhiteSpace(label.Text)) {
+                        throw new InvalidOperationException("Busy progress text is missing or clipped.");
+                    }
+                }
+
+                if (Descendants(form).OfType<StatusStrip>().Single().Items.OfType<ToolStripProgressBar>().Any()) {
+                    throw new InvalidOperationException("Redundant status progress is still present.");
+                }
+
+                using (var bitmap = new Bitmap(form.Width, form.Height)) {
+                    form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size));
+                    bitmap.Save(Path.Combine(destination, "Busy-" + phase + "-" + (int)(scale * 100) + ".png"));
+                }
+
+                navigate.Invoke(form, new object[] { "Activity" });
+                PumpUi();
+                var activity = Descendants(form).OfType<ActivityView>().Single();
+                if (Descendants(activity).OfType<Button>().Any(button => !button.Enabled) || form.UseWaitCursor) {
+                    throw new InvalidOperationException("Activity tools are blocked during engineering work.");
+                }
+
+                var header = Descendants(form).OfType<EidoTiaWorkbench.Controls.ApplicationHeader>().Single();
+                Descendants(header).OfType<Button>().Single(button => button.Text == "Activity").PerformClick();
+                var split = (SplitContainer)typeof(MainShellForm)
+                    .GetField("_contentSplit", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(form);
+                if (split.Panel2Collapsed) {
+                    throw new InvalidOperationException("Activity drawer did not open while busy.");
+                }
+
+                Descendants(header).OfType<Button>().Single(button => button.Text == "Activity").PerformClick();
+                state.CurrentOperation = EidoTiaWorkbench.Application.CurrentOperationInfo.Idle;
+            }
+        }
+
+        /// <summary>Lets real WinForms timers and posted input run during the synthetic busy-operation checks.</summary>
+        private static void PumpUi() {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            while (clock.ElapsedMilliseconds < 350) {
+                System.Windows.Forms.Application.DoEvents();
+                System.Threading.Thread.Sleep(5);
             }
         }
 

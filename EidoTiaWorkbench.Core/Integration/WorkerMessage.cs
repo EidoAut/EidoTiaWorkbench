@@ -24,13 +24,25 @@ namespace EidoTiaWorkbench.Core.Integration {
     public sealed class WorkerMessage {
         private const int MaximumBytes = 64 * 1024 * 1024;
 
-        /// <summary>Gets or sets wire protocol version; only version 1 is accepted.</summary>
+        /// <summary>Gets or sets wire protocol version; only version 2 is accepted.</summary>
         [DataMember]
-        public int Protocol { get; set; } = 1;
+        public int Protocol { get; set; } = 2;
 
-        /// <summary>Gets or sets command or response discriminator defined by protocol version 1.</summary>
+        /// <summary>Gets or sets command or response discriminator defined by protocol version 2.</summary>
         [DataMember]
         public string Command {
+            get; set;
+        }
+
+        /// <summary>Gets or sets the unique command identifier shared by all of its response frames.</summary>
+        [DataMember(EmitDefaultValue = false)]
+        public string RequestId {
+            get; set;
+        }
+
+        /// <summary>Gets or sets the scanned project path that must match before export starts.</summary>
+        [DataMember(EmitDefaultValue = false)]
+        public string ExpectedProjectPath {
             get; set;
         }
 
@@ -46,7 +58,10 @@ namespace EidoTiaWorkbench.Core.Integration {
             get; set;
         }
 
-        /// <summary>Gets or sets a value indicating whether the command option is enabled: UI for Start, close-owned for Disconnect, extended catalog for Scan, or backup for Import.</summary>
+        /// <summary>
+        /// Gets or sets a value indicating whether the command option is enabled: UI for Start, close-owned for
+        /// Disconnect, extended catalog for Scan, or backup for Import.
+        /// </summary>
         [DataMember]
         public bool Flag {
             get; set;
@@ -58,7 +73,9 @@ namespace EidoTiaWorkbench.Core.Integration {
             get; set;
         }
 
-        /// <summary>Gets or sets a value indicating whether HMI XML must retain its original export representation.</summary>
+        /// <summary>
+        /// Gets or sets a value indicating whether HMI XML must retain its original export representation.
+        /// </summary>
         [DataMember]
         public bool PreserveHmi {
             get; set;
@@ -167,7 +184,9 @@ namespace EidoTiaWorkbench.Core.Integration {
             }
         }
 
-        /// <summary>Reads one bounded frame, rejecting DTDs, invalid sizes and incompatible protocol versions.</summary>
+        /// <summary>
+        /// Reads one bounded frame, rejecting DTDs, invalid sizes and incompatible protocol versions.
+        /// </summary>
         /// <param name="stream">Readable pipe owned by the caller.</param>
         /// <returns>The validated protocol envelope.</returns>
         /// <exception cref="EndOfStreamException">The peer closed before the complete frame arrived.</exception>
@@ -183,9 +202,15 @@ namespace EidoTiaWorkbench.Core.Integration {
             var payload = new byte[size];
             ReadExactly(stream, payload);
             using (var buffer = new MemoryStream(payload))
-            using (var reader = XmlReader.Create(buffer, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = MaximumBytes })) {
+            using (var reader = XmlReader.Create(
+                buffer,
+                new XmlReaderSettings {
+                    DtdProcessing = DtdProcessing.Prohibit,
+                    XmlResolver = null,
+                    MaxCharactersInDocument = MaximumBytes,
+                })) {
                 var message = (WorkerMessage)CreateSerializer().ReadObject(reader);
-                if (message.Protocol != 1) {
+                if (message.Protocol != 2) {
                     throw new InvalidDataException("Incompatible worker protocol.");
                 }
 
@@ -193,14 +218,23 @@ namespace EidoTiaWorkbench.Core.Integration {
             }
         }
 
-        private static DataContractSerializer CreateSerializer() => new DataContractSerializer(typeof(WorkerMessage), new[] { typeof(ReadOnlyCollection<string>), typeof(List<string>), typeof(Dictionary<string, string>) });
+        /// <summary>Creates the serializer with the collection types accepted by the IPC contract.</summary>
+        /// <returns>A fresh serializer for a single message envelope.</returns>
+        private static DataContractSerializer CreateSerializer() => new DataContractSerializer(
+            typeof(WorkerMessage),
+            new[] { typeof(ReadOnlyCollection<string>), typeof(List<string>), typeof(Dictionary<string, string>) });
 
+        /// <summary>Accumulates partial pipe reads until the entire frame segment has arrived.</summary>
+        /// <param name="stream">Caller-owned stream; remains open after reading.</param>
+        /// <param name="buffer">Buffer filled with the requested number of bytes.</param>
+        /// <exception cref="EndOfStreamException">The peer closed before the buffer was filled.</exception>
         private static void ReadExactly(Stream stream, byte[] buffer) {
             var offset = 0;
             while (offset < buffer.Length) {
                 var count = stream.Read(buffer, offset, buffer.Length - offset);
                 if (count == 0) {
-                    throw new EndOfStreamException("Openness worker disconnected; operation outcome may be incomplete. Inspect the report before retrying.");
+                    throw new EndOfStreamException(
+                        "Openness worker disconnected; operation outcome may be incomplete. Inspect the report before retrying.");
                 }
 
                 offset += count;

@@ -100,7 +100,9 @@ namespace EidoTiaWorkbench.Core.Utilities {
         /// </remarks>
         /// <param name="item">Export item whose CPU, group path, and kind determine the folder.</param>
         /// <returns>A relative folder path rooted at the sanitized CPU path.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="item"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
         public static string GetRelativeFolder(ExportItem item) {
             if (item == null) {
                 throw new ArgumentNullException(nameof(item));
@@ -142,7 +144,9 @@ namespace EidoTiaWorkbench.Core.Utilities {
         /// </remarks>
         /// <param name="item">Export item whose name and logical identity determine the filename.</param>
         /// <returns>A sanitized XML filename with an eight-character hash disambiguator.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="item"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
         public static string GetFileName(ExportItem item) {
             if (item == null) {
                 throw new ArgumentNullException(nameof(item));

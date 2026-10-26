@@ -86,11 +86,35 @@ namespace EidoTiaWorkbench.Core.Openness {
                     }
 
                     if (profile == ExportProfile.Full) {
-                        CollectWatchTables(TryGetPropertyValue(plc, "WatchAndForceTableGroup"), cpuPath, "WatchTables", items);
-                        CollectForceTables(TryGetPropertyValue(plc, "WatchAndForceTableGroup"), cpuPath, "ForceTables", items);
-                        CollectTechnologyObjects(TryGetPropertyValue(plc, "TechnologicalObjectGroup"), cpuPath, "TechnologyObjects", items);
-                        CollectUnsupported(TryGetPropertyValue(plc, "ExternalSourceGroup"), cpuPath, "ExternalSources", ExportKind.PlcExternalSource, "ExternalSources", items);
-                        CollectUnsupported(TryGetPropertyValue(plc, "PlcAlarmTextlistGroup"), cpuPath, "AlarmTextLists", ExportKind.PlcAlarmTextList, "PlcAlarmUserTextlists", items);
+                        CollectWatchTables(
+                            TryGetPropertyValue(plc, "WatchAndForceTableGroup"),
+                            cpuPath,
+                            "WatchTables",
+                            items);
+                        CollectForceTables(
+                            TryGetPropertyValue(plc, "WatchAndForceTableGroup"),
+                            cpuPath,
+                            "ForceTables",
+                            items);
+                        CollectTechnologyObjects(
+                            TryGetPropertyValue(plc, "TechnologicalObjectGroup"),
+                            cpuPath,
+                            "TechnologyObjects",
+                            items);
+                        CollectUnsupported(
+                            TryGetPropertyValue(plc, "ExternalSourceGroup"),
+                            cpuPath,
+                            "ExternalSources",
+                            ExportKind.PlcExternalSource,
+                            "ExternalSources",
+                            items);
+                        CollectUnsupported(
+                            TryGetPropertyValue(plc, "PlcAlarmTextlistGroup"),
+                            cpuPath,
+                            "AlarmTextLists",
+                            ExportKind.PlcAlarmTextList,
+                            "PlcAlarmUserTextlists",
+                            items);
                     }
                 }
             }
@@ -159,7 +183,9 @@ namespace EidoTiaWorkbench.Core.Openness {
                 // Property name may vary across Openness versions.
                 // We try common ones and then look for a BlockGroup on the safety program object.
                 var spProp = plc.GetType().GetProperty("SafetyProgram", BindingFlags.Instance | BindingFlags.Public)
-                             ?? plc.GetType().GetProperty("PlcSafetyProgram", BindingFlags.Instance | BindingFlags.Public);
+                             ?? plc.GetType().GetProperty(
+                                 "PlcSafetyProgram",
+                                 BindingFlags.Instance | BindingFlags.Public);
 
                 var sp = spProp?.GetValue(plc, null);
                 if (sp == null) {
@@ -221,7 +247,12 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// <param name="prefix">Logical root prefix used while trimming Openness root folders.</param>
         /// <param name="items">Mutable scan result list receiving discovered block items.</param>
         /// <param name="includeDbs">Whether DBs should be included in the scan result.</param>
-        private static void CollectBlocks(PlcBlockGroup group, string cpuPath, string prefix, List<ExportItem> items, bool includeDbs) {
+        private static void CollectBlocks(
+            PlcBlockGroup group,
+            string cpuPath,
+            string prefix,
+            List<ExportItem> items,
+            bool includeDbs) {
             if (group == null) {
                 return;
             }
@@ -260,7 +291,13 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// <param name="currentPath">Current logical group path including nested block groups.</param>
         /// <param name="items">Mutable scan result list receiving discovered block items.</param>
         /// <param name="includeDbs">Whether DBs should be included in the scan result.</param>
-        private static void CollectBlocksRecursive(PlcBlockGroup group, string cpuPath, string prefix, string currentPath, List<ExportItem> items, bool includeDbs) {
+        private static void CollectBlocksRecursive(
+            PlcBlockGroup group,
+            string cpuPath,
+            string prefix,
+            string currentPath,
+            List<ExportItem> items,
+            bool includeDbs) {
             if (group == null) {
                 return;
             }
@@ -424,7 +461,11 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// <param name="cpuPath">Stable CPU path stored in each discovered artifact.</param>
         /// <param name="prefix">Logical root prefix used while traversing tag tables.</param>
         /// <param name="items">Mutable scan result list receiving discovered constant items.</param>
-        private static void CollectUserConstants(object tagRoot, string cpuPath, string prefix, List<ExportItem> items) {
+        private static void CollectUserConstants(
+            object tagRoot,
+            string cpuPath,
+            string prefix,
+            List<ExportItem> items) {
             TraverseGenericGroup(
                 root: tagRoot,
                 groupPath: prefix,
@@ -440,7 +481,8 @@ namespace EidoTiaWorkbench.Core.Openness {
 
                         var constantPath = TrimRootPath(groupPath, prefix);
                         if (!string.IsNullOrWhiteSpace(tableName)) {
-                            constantPath = string.IsNullOrWhiteSpace(constantPath) ? tableName : constantPath + "/" + tableName;
+                            constantPath = string.IsNullOrWhiteSpace(
+                                constantPath) ? tableName : constantPath + "/" + tableName;
                         }
 
                         items.Add(new ExportItem(
@@ -482,8 +524,18 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// <param name="cpuPath">Stable CPU path stored in each discovered artifact.</param>
         /// <param name="prefix">Logical root prefix used during traversal.</param>
         /// <param name="items">Mutable scan result list receiving discovered technology object items.</param>
-        private static void CollectTechnologyObjects(object root, string cpuPath, string prefix, List<ExportItem> items) {
-            CollectGenericExportable(root, cpuPath, prefix, "TechnologicalObjects", ExportKind.TechnologicalObject, items);
+        private static void CollectTechnologyObjects(
+            object root,
+            string cpuPath,
+            string prefix,
+            List<ExportItem> items) {
+            CollectGenericExportable(
+                root,
+                cpuPath,
+                prefix,
+                "TechnologicalObjects",
+                ExportKind.TechnologicalObject,
+                items);
         }
 
         /// <summary>
@@ -495,7 +547,13 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// <param name="itemProperty">Public collection property that contains artifacts.</param>
         /// <param name="kind">Kind assigned to discovered items.</param>
         /// <param name="items">Mutable scan result list receiving discovered items.</param>
-        private static void CollectGenericExportable(object root, string cpuPath, string prefix, string itemProperty, ExportKind kind, List<ExportItem> items) {
+        private static void CollectGenericExportable(
+            object root,
+            string cpuPath,
+            string prefix,
+            string itemProperty,
+            ExportKind kind,
+            List<ExportItem> items) {
             if (root == null) {
                 return;
             }
@@ -525,7 +583,13 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// <param name="kind">Unsupported artifact kind.</param>
         /// <param name="itemProperty">Public collection property that contains artifacts.</param>
         /// <param name="items">Mutable scan result list receiving discovered items.</param>
-        private static void CollectUnsupported(object root, string cpuPath, string prefix, ExportKind kind, string itemProperty, List<ExportItem> items) {
+        private static void CollectUnsupported(
+            object root,
+            string cpuPath,
+            string prefix,
+            ExportKind kind,
+            string itemProperty,
+            List<ExportItem> items) {
             var descriptor = ArtifactCatalog.Get(kind);
             if (root == null) {
                 return;
@@ -564,7 +628,9 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// <param name="groupPath">Logical group path associated with the root node.</param>
         /// <param name="getChildren">Accessor returning nested child groups for a group object.</param>
         /// <param name="getItems">Accessor returning artifact objects for a group object.</param>
-        /// <param name="addItem">Callback that receives group path and object name for each discovered artifact.</param>
+        /// <param name="addItem">
+        /// Callback that receives group path and object name for each discovered artifact.
+        /// </param>
         private static void TraverseGenericGroup(
             object root,
             string groupPath,
@@ -601,7 +667,9 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// </summary>
         /// <param name="obj">Openness object that may expose the requested child collection.</param>
         /// <param name="propertyName">Public property name to read.</param>
-        /// <returns>The collection value as <see cref="IEnumerable"/>, or an empty collection when unavailable.</returns>
+        /// <returns>
+        /// The collection value as <see cref="IEnumerable"/>, or an empty collection when unavailable.
+        /// </returns>
         private static IEnumerable GetChildren(object obj, string propertyName) {
             if (obj == null) {
                 return Array.Empty<object>();
@@ -666,7 +734,9 @@ namespace EidoTiaWorkbench.Core.Openness {
             }
 
             var current = root;
-            foreach (var part in groupPath.Replace("\\", "/").Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) {
+            foreach (var part in groupPath.Replace(
+                "\\",
+                "/").Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) {
                 var next = GetChildren(current, "Groups")
                     .Cast<object>()
                     .FirstOrDefault(g => string.Equals(GetName(g), part, StringComparison.OrdinalIgnoreCase));

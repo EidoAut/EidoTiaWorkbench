@@ -2,6 +2,8 @@
 
 Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
+Readability guidance updated on 2026-10-26.
+
 ## Purpose and precedence
 
 Adaptation of the EIDO Python Programming Style Guide v1.0 to idiomatic C#.
@@ -24,6 +26,47 @@ Keep closing braces on their own line. Use one statement per line, System direct
 first and outside the namespace. Prefer lines under 120 characters, without artificial alignment.
 Use `dotnet format whitespace`; do not combine contradictory formatters.
 New syntax must compile under C# 7.3 and .NET Framework 4.8.
+
+## Line length and expression readability
+
+Use 120 characters as the normal line-length target for maintained C# code and
+comments. This is a readability guideline, not a reason to break an indivisible
+identifier, URL or external value. Review remaining long lines explicitly;
+passing the formatter does not establish that expressions are easy to read.
+
+When a call or declaration needs several lines, put its arguments or parameters
+on separate lines, indented by four spaces. Keep short signatures intact when
+only their expression body needs wrapping. Expand long object initializers to
+one assignment per line and include the trailing comma required by StyleCop.
+Separate multiline members with blank lines.
+
+Break conditions, concatenations and LINQ chains at meaningful boundaries.
+Keep each logical term or pipeline step together; avoid splitting a short nested
+call just to move its argument onto another line. Do not use deep indentation or
+artificial column alignment to accommodate a complicated expression.
+
+Introduce a descriptive local variable when a conditional, composed message or
+combination of flags obscures the surrounding call. Names such as
+`integrationMessage`, `projectDetails` and `textFlags` should explain the value's
+role. Preserve evaluation order, short-circuit behavior and the number of
+property or method evaluations when moving expressions into locals.
+
+Respect SA1116, SA1117 and SA1118 when wrapping calls. In particular, extract a
+complex later argument into a local when wrapping it would violate SA1118; do
+not suppress the diagnostic or compress the expression back into a very long
+line. For example:
+
+```csharp
+var integrationMessage = this.SelectedInstallation == null
+    ? "Offline mode: no usable adapter selected."
+    : this.SelectedInstallation.ToString();
+this.Log(ActivitySeverity.Info, "Integration", string.Empty, string.Empty, integrationMessage);
+```
+
+Long literal messages may be split into adjacent constant string expressions
+joined with `+`. Preserve the exact resulting text, including spaces, escape
+sequences and placeholders. Do not change user-facing messages or wire values
+as a side effect of cosmetic cleanup.
 
 ## Corporate headers
 
@@ -54,11 +97,30 @@ STA requirements, preconditions, cancellation and invalid external states. Do no
 narrate obvious syntax. Private helpers need documentation when behavior is
 non-obvious, not a duplicate of their names.
 
-Review methods around 50â€“80 effective lines, classes/files around 400â€“600 and
+For private helpers that manage processes, IPC or discovery, document the
+operational contract: required locks, caller-owned streams, partial reads,
+startup readiness, bounded traversal, retained diagnostics and cleanup behavior,
+as applicable. Describe when cancellation takes effect and whether disposal
+waits for accepted work. Do not describe draining a queue as immediate abortion.
+
+Keep XML documentation readable too. When an element needs multiple lines,
+place its opening and closing tags on their own documentation lines, and wrap
+the prose between them. Keep each parameter in its own XML element, preserve
+`cref` and `paramref` references, and keep punctuation attached to the text.
+Use `remarks` for lifecycle constraints and `exception` for relevant failure
+conditions; avoid adding tags that merely repeat the signature.
+
+Review methods around 50-80 effective lines, classes/files around 400-600 and
 nesting beyond three levels. These are review thresholds, not mechanical errors.
 Split by responsibility and lifecycle. Optional regions group real responsibilities
 such as Initialization, Validation, Execution and Resource Cleanup; never every
 method. A region does not cure excessive responsibilities.
+
+Extract a focused helper when a nested callback or initializer hides a distinct
+responsibility, such as converting an export progress callback into an IPC frame.
+Keep the callback readable and document the helper's inputs and side effects.
+Do not create helpers solely to reduce line counts: a useful extraction has a
+clear purpose and preserves threading, serialization and exception behavior.
 
 ## State, configuration and errors
 
@@ -129,6 +191,11 @@ StyleCop.Analyzers 1.1.118, compiler XML diagnostics and `.editorconfig` are sha
 by the projects. SA1309 is the documented exception for `_camelCase` private
 fields; SA1500 is disabled to allow opening braces on the same line. No blanket suppression or fictional EIDO analyzer is introduced.
 Functional failures and security defects are separate from style warnings.
+Whitespace formatting does not automatically enforce the 120-character target
+or improve decomposition and documentation. Review those aspects manually after
+formatting. For readability refactors, inspect the diff for unchanged literals,
+contracts, evaluation order and resource ownership; token comparison can support
+that review for whitespace-only edits but cannot replace behavioral validation.
 Generated Designer sources are excluded. Run `tools/Test-EidoStyle.ps1` to verify
 owned headers, encoding, formatting and compiler/analyzer diagnostics in all seven
 projects under Debug and Release. Warnings fail that verification; review of

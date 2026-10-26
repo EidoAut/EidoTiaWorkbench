@@ -60,7 +60,9 @@ namespace EidoTiaWorkbench.Views {
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 88));
 
             var header = new PageHeader();
-            header.SetText("Export", "Scan PLC and HMI artifacts, filter selection, and write structured XML payloads.");
+            header.SetText(
+                "Export",
+                "Scan PLC and HMI artifacts, filter selection, and write structured XML payloads.");
 
             this._inventorySummary = new Label {
                 Dock = DockStyle.Top,
@@ -92,17 +94,39 @@ namespace EidoTiaWorkbench.Views {
             this._profile = new ThemedComboBox { Width = 126, Margin = new Padding(8, 4, 8, 0) };
             this._profile.DataSource = Enum.GetValues(typeof(ExportProfile));
             this._profile.SelectedItem = ExportProfile.Core;
-            this._includeDbs = new ThemedCheckBox { Text = "Include DBs", AutoSize = true, Margin = new Padding(4, 10, 8, 0) };
-            this._normalizeXml = new ThemedCheckBox { Text = "Normalize PLC XML", Checked = true, AutoSize = true, Margin = new Padding(4, 10, 8, 0) };
-            this._preserveHmiXml = new ThemedCheckBox { Text = "Preserve HMI XML", Checked = true, AutoSize = true, Margin = new Padding(4, 10, 8, 0) };
-            this._incremental = new ThemedCheckBox { Text = "Incremental", Checked = true, AutoSize = true, Margin = new Padding(4, 10, 8, 0) };
+            this._includeDbs = new ThemedCheckBox {
+                Text = "Include DBs",
+                AutoSize = true,
+                Margin = new Padding(4, 10, 8, 0),
+            };
+            this._normalizeXml = new ThemedCheckBox {
+                Text = "Normalize PLC XML",
+                Checked = true,
+                AutoSize = true,
+                Margin = new Padding(4, 10, 8, 0),
+            };
+            this._preserveHmiXml = new ThemedCheckBox {
+                Text = "Preserve HMI XML",
+                Checked = true,
+                AutoSize = true,
+                Margin = new Padding(4, 10, 8, 0),
+            };
+            this._incremental = new ThemedCheckBox {
+                Text = "Incremental",
+                Checked = true,
+                AutoSize = true,
+                Margin = new Padding(4, 10, 8, 0),
+            };
             toolbar.Controls.Add(this._profile);
             var options = new OperationToolbar { Visible = false, Margin = Padding.Empty };
             options.Controls.Add(this._includeDbs);
             options.Controls.Add(this._normalizeXml);
             options.Controls.Add(this._preserveHmiXml);
             options.Controls.Add(this._incremental);
-            var optionsButton = new SecondaryButton { Text = "Export options", AccessibleDescription = "Show or hide XML, DB and incremental export settings." };
+            var optionsButton = new SecondaryButton {
+                Text = "Export options",
+                AccessibleDescription = "Show or hide XML, DB and incremental export settings.",
+            };
             optionsButton.Click += (sender, e) => {
                 options.Visible = !options.Visible;
                 optionsButton.Text = options.Visible ? "Hide options" : "Export options";
@@ -110,7 +134,9 @@ namespace EidoTiaWorkbench.Views {
             toolbar.Controls.Add(optionsButton);
             toolbar.SetFlowBreak(optionsButton, true);
             toolbar.Controls.Add(options);
-            toolbar.SizeChanged += (sender, e) => options.MaximumSize = new Size(Math.Max(300, toolbar.ClientSize.Width - 24), 0);
+            toolbar.SizeChanged += (
+                sender,
+                e) => options.MaximumSize = new Size(Math.Max(300, toolbar.ClientSize.Width - 24), 0);
 
             this._filter = new ArtifactFilterBar();
             this._filter.FilterChanged += (s, e) => this.ApplyFilter();
@@ -170,7 +196,9 @@ namespace EidoTiaWorkbench.Views {
                 Font = ThemeFonts.Body,
                 ForeColor = ThemeColors.TextSecondary,
             };
-            detailsPanel.SizeChanged += (s, e) => this._details.MaximumSize = new Size(Math.Max(180, detailsPanel.ClientSize.Width - 48), 0);
+            detailsPanel.SizeChanged += (
+                s,
+                e) => this._details.MaximumSize = new Size(Math.Max(180, detailsPanel.ClientSize.Width - 48), 0);
             detailsPanel.Controls.Add(this._detailsTitle, 0, 0);
             detailsPanel.Controls.Add(this._details, 0, 1);
 
@@ -190,7 +218,13 @@ namespace EidoTiaWorkbench.Views {
             bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             bottom.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             bottom.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true, FlowDirection = FlowDirection.RightToLeft };
+            var actions = new FlowLayoutPanel {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                WrapContents = true,
+                FlowDirection = FlowDirection.RightToLeft,
+            };
             var toolTip = new ToolTip();
             this.Disposed += (sender, e) => toolTip.Dispose();
             this._retryIncomplete = new SecondaryButton { Text = "Retry incomplete" };
@@ -368,7 +402,9 @@ namespace EidoTiaWorkbench.Views {
                 return false;
             }
 
-            var inspectorWidth = Math.Min(ThemeMetrics.Scale(body, 360), Math.Max(ThemeMetrics.Scale(body, 300), width / 4));
+            var inspectorWidth = Math.Min(
+                ThemeMetrics.Scale(body, 360),
+                Math.Max(ThemeMetrics.Scale(body, 300), width / 4));
             var maxDistance = width - inspectorMinimum;
             var distance = Math.Min(maxDistance, Math.Max(treeMinimum, width - inspectorWidth));
             if (distance < treeMinimum || distance > maxDistance) {
@@ -403,7 +439,8 @@ namespace EidoTiaWorkbench.Views {
             }
 
             if (!string.IsNullOrWhiteSpace(this._filter.DeviceText)) {
-                filtered = filtered.Where(i => i.CpuPath.IndexOf(this._filter.DeviceText, StringComparison.OrdinalIgnoreCase) >= 0);
+                filtered = filtered.Where(
+                    i => i.CpuPath.IndexOf(this._filter.DeviceText, StringComparison.OrdinalIgnoreCase) >= 0);
             }
 
             if (!string.IsNullOrWhiteSpace(this._filter.SearchText)) {
@@ -424,8 +461,11 @@ namespace EidoTiaWorkbench.Views {
         /// </summary>
         private void UpdateSelectionSummary() {
             var selected = this._tree.GetCheckedItems().Count;
-            this._inventorySummary.Text = this._items.Count + " artifacts    ·    " + selected + " selected    ·    " + this._visibleItems.Count(i => i.IsPlc) + " PLC / " + this._visibleItems.Count(i => i.IsHmi) + " HMI";
-            this._selectionSummary.Text = selected + " selected / " + this._items.Count + " scanned / " + this._visibleItems.Count + " visible";
+            this._inventorySummary.Text = this._items.Count + " artifacts    ·    " + selected +
+                " selected    ·    " + this._visibleItems.Count(
+                i => i.IsPlc) + " PLC / " + this._visibleItems.Count(i => i.IsHmi) + " HMI";
+            this._selectionSummary.Text = selected + " selected / " + this._items.Count + " scanned / " +
+                this._visibleItems.Count + " visible";
             this.UpdateCommandStates(selected);
             if (this._tree.SelectedItem == null) {
                 this.UpdateDetails();
@@ -474,14 +514,19 @@ namespace EidoTiaWorkbench.Views {
                 item.Name + Environment.NewLine + Environment.NewLine +
                 "TYPE   " + item.Kind + Environment.NewLine +
                 "Target: " + item.CpuPath + Environment.NewLine +
-                (string.IsNullOrWhiteSpace(item.TargetType) ? string.Empty : "Target type: " + item.TargetType + Environment.NewLine) +
+                (string.IsNullOrWhiteSpace(
+                    item.TargetType) ? string.Empty : "Target type: " + item.TargetType + Environment.NewLine) +
                 Environment.NewLine + "LOCATION" + Environment.NewLine + item.GroupPath + Environment.NewLine +
                 Environment.NewLine + "IDENTIFIER" + Environment.NewLine + item.LogicalKey + Environment.NewLine +
                 Environment.NewLine + "AVAILABILITY" + Environment.NewLine +
                 (item.CanExport ? "Ready for export" : "Export unavailable") + Environment.NewLine +
-                (string.IsNullOrWhiteSpace(item.UnavailableReason) ? string.Empty : "Warning: " + item.UnavailableReason);
+                (string.IsNullOrWhiteSpace(
+                    item.UnavailableReason) ? string.Empty : "Warning: " + item.UnavailableReason);
             if (item.Metadata.Count > 0) {
-                this._details.Text += Environment.NewLine + Environment.NewLine + "METADATA" + Environment.NewLine + string.Join(Environment.NewLine, item.Metadata.Select(pair => pair.Key + ": " + pair.Value));
+                this._details.Text += Environment.NewLine + Environment.NewLine + "METADATA" +
+                    Environment.NewLine + string.Join(
+                    Environment.NewLine,
+                    item.Metadata.Select(pair => pair.Key + ": " + pair.Value));
             }
         }
     }

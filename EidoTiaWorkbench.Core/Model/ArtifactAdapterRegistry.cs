@@ -67,7 +67,11 @@ namespace EidoTiaWorkbench.Core.Model {
 
             var duplicates = ArtifactCatalog.All
                 .Where(d => d.Kind != ExportKind.Unsupported)
-                .Where(d => !(d.Domain == ArtifactDomain.Plc && string.Equals(d.Category, "Blocks", StringComparison.OrdinalIgnoreCase)))
+                .Where(
+                    d => !(d.Domain == ArtifactDomain.Plc && string.Equals(
+                        d.Category,
+                        "Blocks",
+                        StringComparison.OrdinalIgnoreCase)))
                 .GroupBy(d => d.Domain + "|" + d.Category, StringComparer.OrdinalIgnoreCase)
                 .Where(g => g.Count() > 1)
                 .Select(g => g.Key);

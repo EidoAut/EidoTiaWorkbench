@@ -31,20 +31,35 @@ namespace EidoTiaWorkbench.Presentation {
             view.ExportSelectedRequested += (s, e) => FireAndReport(
                 view,
                 async () => {
-                    await controller.ExportAsync(view.SelectedItems, view.NormalizeXml, view.PreserveHmiXml, view.Incremental, "Export selected");
+                    await controller.ExportAsync(
+                        view.SelectedItems,
+                        view.NormalizeXml,
+                        view.PreserveHmiXml,
+                        view.Incremental,
+                        "Export selected");
                 });
 
             view.ExportAllRequested += (s, e) => FireAndReport(
                 view,
                 async () => {
-                    await controller.ExportAsync(view.AllItems, view.NormalizeXml, view.PreserveHmiXml, view.Incremental, "Export all");
+                    await controller.ExportAsync(
+                        view.AllItems,
+                        view.NormalizeXml,
+                        view.PreserveHmiXml,
+                        view.Incremental,
+                        "Export all");
                 });
 
             view.ExportChangedRequested += (s, e) => FireAndReport(
                 view,
                 async () => {
                     var selected = view.SelectedItems.Count > 0 ? view.SelectedItems : view.AllItems;
-                    await controller.ExportAsync(selected, view.NormalizeXml, view.PreserveHmiXml, true, "Export changed");
+                    await controller.ExportAsync(
+                        selected,
+                        view.NormalizeXml,
+                        view.PreserveHmiXml,
+                        true,
+                        "Export changed");
                 });
 
             view.RetryIncompleteRequested += (s, e) => FireAndReport(

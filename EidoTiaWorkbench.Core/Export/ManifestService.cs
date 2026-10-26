@@ -9,9 +9,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using EidoTiaWorkbench.Core.Model;
+using EidoTiaWorkbench.Core.Utilities;
 
 namespace EidoTiaWorkbench.Core.Export {
     /// <summary>
@@ -35,12 +37,64 @@ namespace EidoTiaWorkbench.Core.Export {
         /// </summary>
         private const string DefaultManifestName = "manifest.json";
 
+        /// <summary>Rejects reuse of an incremental repository belonging to another or unknown project.</summary>
+        /// <param name="repoRoot">Destination repository, already created by the caller.</param>
+        /// <param name="manifest">Manifest whose project identity is validated and then recorded.</param>
+        /// <param name="projectPath">Canonical source project location reported by the session.</param>
+        /// <exception cref="InvalidDataException">The project identity is missing or conflicts with existing data.</exception>
+        public static void BindProject(string repoRoot, Manifest manifest, string projectPath) {
+            if (string.IsNullOrWhiteSpace(projectPath)) {
+                throw new InvalidDataException("Project location is unknown; export cannot establish repository ownership.");
+            }
+
+            var identity = Path.GetFullPath(projectPath);
+            if (string.IsNullOrWhiteSpace(manifest.ProjectPath)) {
+                if (manifest.Entries.Count > 0 || Directory.EnumerateFiles(repoRoot, "*", SearchOption.AllDirectories).Any()) {
+                    throw new InvalidDataException(
+                        "Existing repository has no verified project identity. Use a new workspace or a full export.");
+                }
+            }
+            else if (!string.Equals(Path.GetFullPath(manifest.ProjectPath), identity, StringComparison.OrdinalIgnoreCase)) {
+                throw new InvalidDataException("Repository belongs to another project. Select a different workspace.");
+            }
+
+            manifest.ProjectPath = identity;
+        }
+
+        /// <summary>Checks all declared payloads and verifies the primary bytes before an incremental write.</summary>
+        /// <param name="repoRoot">Repository containing the payloads.</param>
+        /// <param name="entry">Previously recorded artifact.</param>
+        /// <returns>False when a required payload is missing or empty; true when the primary hash is verified.</returns>
+        /// <exception cref="InvalidDataException">The existing primary payload was modified or lacks a hash.</exception>
+        public static bool HasVerifiedPayload(string repoRoot, ManifestEntry entry) {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.PrimaryPath)) {
+                return false;
+            }
+
+            var primary = ResolvePayloadPath(repoRoot, entry.PrimaryPath);
+            if (File.Exists(primary)) {
+                var actual = HashHelper.Sha256Hex(File.ReadAllBytes(primary));
+                if (!string.Equals(actual, entry.Sha256, StringComparison.OrdinalIgnoreCase)) {
+                    throw new InvalidDataException(
+                        "Repository payload differs from the recorded hash; preserve or resolve local changes: " + primary);
+                }
+            }
+
+            var paths = new List<string>(entry.Files ?? new List<string>()) { entry.PrimaryPath };
+            return paths.All(relative => {
+                var file = new FileInfo(ResolvePayloadPath(repoRoot, relative));
+                return file.Exists && file.Length > 0;
+            });
+        }
+
         /// <summary>
         /// Builds the stable manifest key used for schema 3 artifact inventory entries.
         /// </summary>
         /// <param name="item">Scanned artifact whose logical identity should be persisted.</param>
         /// <returns>A stable manifest key that does not depend on a payload path.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="item"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
         public static string GetArtifactKey(ExportItem item) {
             if (item == null) {
                 throw new ArgumentNullException(nameof(item));
@@ -50,7 +104,9 @@ namespace EidoTiaWorkbench.Core.Export {
                 return item.LogicalKey;
             }
 
-            return (item.CpuPath ?? string.Empty) + "||" + item.Kind + "||" + (item.GroupPath ?? string.Empty).Replace("\\", "/") + "||" + (item.Name ?? string.Empty);
+            return (item.CpuPath ?? string.Empty) + "||" + item.Kind + "||" + (item.GroupPath ?? string.Empty).Replace(
+                "\\",
+                "/") + "||" + (item.Name ?? string.Empty);
         }
 
         /// <summary>
@@ -67,8 +123,14 @@ namespace EidoTiaWorkbench.Core.Export {
                 return true;
             }
 
-            return string.Equals(entry.LastStatus, ArtifactExportStatus.Failed.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(entry.LastStatus, ArtifactExportStatus.AbortedSessionLost.ToString(), StringComparison.OrdinalIgnoreCase);
+            return string.Equals(
+                entry.LastStatus,
+                ArtifactExportStatus.Failed.ToString(),
+                StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       entry.LastStatus,
+                       ArtifactExportStatus.AbortedSessionLost.ToString(),
+                       StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -86,8 +148,11 @@ namespace EidoTiaWorkbench.Core.Export {
                 var ser = new DataContractJsonSerializer(typeof(Manifest));
                 var obj = ser.ReadObject(fs) as Manifest;
 
-                // Defensive: handle corrupt/empty files gracefully by returning a new manifest.
-                return obj ?? new Manifest();
+                if (obj == null || obj.Entries == null) {
+                    throw new InvalidDataException("Manifest is missing its artifact entries.");
+                }
+
+                return obj;
             }
         }
 
@@ -200,6 +265,25 @@ namespace EidoTiaWorkbench.Core.Export {
             return Path.Combine(repoRoot, "meta", DefaultManifestName);
         }
 
+        /// <summary>Resolves manifest paths without allowing them to escape their repository.</summary>
+        /// <param name="repoRoot">Trusted root selected by the user.</param>
+        /// <param name="relativePath">Untrusted repository-relative payload path.</param>
+        /// <returns>An absolute path contained lexically within the repository.</returns>
+        /// <exception cref="InvalidDataException">The path is empty, rooted or traverses outside the repository.</exception>
+        internal static string ResolvePayloadPath(string repoRoot, string relativePath) {
+            if (string.IsNullOrWhiteSpace(relativePath) || Path.IsPathRooted(relativePath)) {
+                throw new InvalidDataException("Manifest payload path must be repository-relative.");
+            }
+
+            var root = Path.GetFullPath(repoRoot).TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
+            var full = Path.GetFullPath(Path.Combine(root, relativePath));
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) {
+                throw new InvalidDataException("Manifest payload path escapes the repository.");
+            }
+
+            return full;
+        }
+
         /// <summary>
         /// Determines whether a manifest entry intentionally has no valid payload.
         /// </summary>
@@ -228,7 +312,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 }
             }
 
-            if (result.Count == 0 && !string.IsNullOrWhiteSpace(key) && key.IndexOf("||", StringComparison.Ordinal) < 0) {
+            if (result.Count == 0 && !string.IsNullOrWhiteSpace(
+                key) && key.IndexOf("||", StringComparison.Ordinal) < 0) {
                 result.Add(key);
             }
 
@@ -264,6 +349,12 @@ namespace EidoTiaWorkbench.Core.Export {
             /// </summary>
             [DataMember]
             public string OpennessVersion { get; set; } = string.Empty;
+
+            /// <summary>Gets or sets the verified source project path; absent in legacy unbound repositories.</summary>
+            [DataMember(EmitDefaultValue = false)]
+            public string ProjectPath {
+                get; set;
+            }
 
             /// <summary>
             /// Gets or sets the UTC timestamp at which the last export run started.

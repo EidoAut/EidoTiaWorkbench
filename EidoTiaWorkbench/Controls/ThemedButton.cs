@@ -19,9 +19,15 @@ namespace EidoTiaWorkbench.Controls {
         private bool _hover;
         private bool _pressed;
 
-        /// <summary>Initializes a new instance of the <see cref="ThemedButton"/> class. Creates a keyboard-accessible action button using the active semantic palette.</summary>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ThemedButton"/> class. Creates a keyboard-accessible action
+        /// button using the active semantic palette.
+        /// </summary>
         public ThemedButton() {
-            this.SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+            this.SetStyle(
+                ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                    ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw,
+                true);
             this.AutoSize = true;
             this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             this.FlatStyle = FlatStyle.Flat;
@@ -46,7 +52,9 @@ namespace EidoTiaWorkbench.Controls {
         /// <summary>Gets a value indicating whether pointer hover feedback is active.</summary>
         protected bool IsPointerOver => this._hover;
 
-        /// <summary>Reapplies the semantic palette and schedules repainting without changing interaction state.</summary>
+        /// <summary>
+        /// Reapplies the semantic palette and schedules repainting without changing interaction state.
+        /// </summary>
         public void ApplyTheme() {
             this.BackColor = ThemeColors.SurfaceSecondary;
             this.ForeColor = ThemeColors.TextPrimary;
@@ -136,7 +144,9 @@ namespace EidoTiaWorkbench.Controls {
                 border = ThemeColors.PrimaryHover;
             }
 
-            using (var path = RoundedDrawing.Path(new RectangleF(0.5F, 0.5F, this.Width - 1, this.Height - 1), 6F * this.DeviceDpi / 96F))
+            using (var path = RoundedDrawing.Path(
+                new RectangleF(0.5F, 0.5F, this.Width - 1, this.Height - 1),
+                6F * this.DeviceDpi / 96F))
             using (var brush = new SolidBrush(fill))
             using (var pen = new Pen(border)) {
                 e.Graphics.FillPath(brush, path);
@@ -151,15 +161,21 @@ namespace EidoTiaWorkbench.Controls {
                 bounds.Width -= this.Image.Width + 6;
             }
 
+            var textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis |
+                TextFormatFlags.NoPrefix;
             TextRenderer.DrawText(
                 e.Graphics,
                 this.Text,
                 this.Font,
                 bounds,
                 text,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+                textFlags);
             if (this.Focused && this.ShowFocusCues) {
-                ControlPaint.DrawFocusRectangle(e.Graphics, Rectangle.Inflate(this.ClientRectangle, -4, -4), text, fill);
+                ControlPaint.DrawFocusRectangle(
+                    e.Graphics,
+                    Rectangle.Inflate(this.ClientRectangle, -4, -4),
+                    text,
+                    fill);
             }
         }
     }

@@ -58,13 +58,8 @@ namespace EidoTiaWorkbench.Core.Inventory {
                 throw new DirectoryNotFoundException(repoRoot);
             }
 
-            ManifestService.Manifest manifest = null;
-            try {
-                manifest = this._manifestService.Load(repoRoot);
-            }
-            catch {
-                manifest = new ManifestService.Manifest();
-            }
+            // Invalid manifests must remain visible failures, never silently become path-only inventories.
+            var manifest = this._manifestService.Load(repoRoot);
 
             var root = Path.GetFullPath(repoRoot);
             var extensions = new HashSet<string>(
@@ -82,6 +77,30 @@ namespace EidoTiaWorkbench.Core.Inventory {
                 result.Add(BuildArtifact(root, file, manifest));
             }
 
+            foreach (var pair in manifest.Entries) {
+                var entry = pair.Value;
+                if (entry == null) {
+                    throw new InvalidDataException("Manifest contains an empty artifact entry: " + pair.Key);
+                }
+
+                var payloads = new List<string>(entry.Files ?? new List<string>());
+                if (!string.IsNullOrWhiteSpace(entry.PrimaryPath)) {
+                    payloads.Add(entry.PrimaryPath);
+                }
+
+                if (payloads.Count == 0 && pair.Key.IndexOf("||", StringComparison.Ordinal) < 0 &&
+                    !string.IsNullOrWhiteSpace(Path.GetExtension(pair.Key))) {
+                    payloads.Add(pair.Key);
+                }
+
+                foreach (var relative in payloads.Distinct(StringComparer.OrdinalIgnoreCase)) {
+                    var full = ManifestService.ResolvePayloadPath(root, relative);
+                    if (!File.Exists(full)) {
+                        throw new InvalidDataException("Manifest payload is missing: " + relative);
+                    }
+                }
+            }
+
             return result;
         }
 
@@ -92,7 +111,10 @@ namespace EidoTiaWorkbench.Core.Inventory {
         /// <param name="filePath">Absolute XML file path.</param>
         /// <param name="manifest">Manifest used to compute comparison state.</param>
         /// <returns>The repository artifact model for the file.</returns>
-        private static RepositoryArtifact BuildArtifact(string repoRoot, string filePath, ManifestService.Manifest manifest) {
+        private static RepositoryArtifact BuildArtifact(
+            string repoRoot,
+            string filePath,
+            ManifestService.Manifest manifest) {
             var relative = MakeRelativePath(repoRoot, filePath);
             ManifestService.ManifestEntry manifestEntry = null;
             if (manifest != null) {
@@ -139,7 +161,9 @@ namespace EidoTiaWorkbench.Core.Inventory {
         /// <param name="manifest">Manifest to inspect.</param>
         /// <param name="relativePath">Repository-relative payload path.</param>
         /// <returns>The matching entry, or <see langword="null"/> when none exists.</returns>
-        private static ManifestService.ManifestEntry FindManifestEntryByPayloadPath(ManifestService.Manifest manifest, string relativePath) {
+        private static ManifestService.ManifestEntry FindManifestEntryByPayloadPath(
+            ManifestService.Manifest manifest,
+            string relativePath) {
             if (manifest == null || manifest.Entries == null) {
                 return null;
             }
@@ -155,7 +179,8 @@ namespace EidoTiaWorkbench.Core.Inventory {
                 }
 
                 if (string.Equals(value.PrimaryPath, relativePath, StringComparison.OrdinalIgnoreCase) ||
-                    (value.Files != null && value.Files.Any(f => string.Equals(f, relativePath, StringComparison.OrdinalIgnoreCase)))) {
+                    (value.Files != null && value.Files.Any(
+                        f => string.Equals(f, relativePath, StringComparison.OrdinalIgnoreCase)))) {
                     return value;
                 }
             }
@@ -201,7 +226,10 @@ namespace EidoTiaWorkbench.Core.Inventory {
         /// <param name="manifestEntry">Manifest entry associated with the path, if present.</param>
         /// <param name="warning">Warning produced when the path cannot be mapped safely.</param>
         /// <returns>The reconstructed export item, or <see langword="null"/> for unsupported paths.</returns>
-        private static ExportItem TryCreateExportItem(string relativePath, ManifestService.ManifestEntry manifestEntry, out string warning) {
+        private static ExportItem TryCreateExportItem(
+            string relativePath,
+            ManifestService.ManifestEntry manifestEntry,
+            out string warning) {
             warning = null;
 
             if (manifestEntry != null) {
@@ -209,7 +237,11 @@ namespace EidoTiaWorkbench.Core.Inventory {
                 if (Enum.TryParse(manifestEntry.ArtifactKind ?? manifestEntry.ArtifactType, out manifestKind)) {
                     var descriptor = ArtifactCatalog.Get(manifestKind);
                     var manifestLogicalKey = string.IsNullOrWhiteSpace(manifestEntry.LogicalKey)
-                        ? BuildLogicalKey(manifestEntry.TargetPath, manifestKind, manifestEntry.GroupPath, manifestEntry.Name)
+                        ? BuildLogicalKey(
+                            manifestEntry.TargetPath,
+                            manifestKind,
+                            manifestEntry.GroupPath,
+                            manifestEntry.Name)
                         : manifestEntry.LogicalKey;
                     return new ExportItem(
                         manifestEntry.TargetPath,
@@ -251,7 +283,9 @@ namespace EidoTiaWorkbench.Core.Inventory {
 
             var category = parts[categoryIndex];
             var cpuPath = string.Join("/", parts.Take(categoryIndex).ToArray());
-            var groupPath = string.Join("/", parts.Skip(categoryIndex + 1).Take(parts.Length - categoryIndex - 2).ToArray());
+            var groupPath = string.Join(
+                "/",
+                parts.Skip(categoryIndex + 1).Take(parts.Length - categoryIndex - 2).ToArray());
             var fileName = Path.GetFileNameWithoutExtension(parts[parts.Length - 1]);
             var name = StripDisambiguator(fileName);
             var kind = InferKind(category, name);
@@ -291,7 +325,9 @@ namespace EidoTiaWorkbench.Core.Inventory {
             }
 
             var targetPath = string.Join("/", parts.Skip(1).Take(categoryIndex - 1).ToArray());
-            var groupPath = string.Join("/", parts.Skip(categoryIndex + 1).Take(parts.Length - categoryIndex - 2).ToArray());
+            var groupPath = string.Join(
+                "/",
+                parts.Skip(categoryIndex + 1).Take(parts.Length - categoryIndex - 2).ToArray());
             var fileName = Path.GetFileNameWithoutExtension(parts[parts.Length - 1]);
             var name = StripDisambiguator(fileName);
             var logicalKey = BuildLogicalKey(targetPath, descriptor.Kind, groupPath, name);
@@ -370,7 +406,9 @@ namespace EidoTiaWorkbench.Core.Inventory {
         /// <param name="name">Artifact name.</param>
         /// <returns>The logical key used by selection and import workflows.</returns>
         private static string BuildLogicalKey(string targetPath, ExportKind kind, string groupPath, string name) {
-            return (targetPath ?? string.Empty) + "||" + kind + "||" + (groupPath ?? string.Empty).Replace("\\", "/") + "||" + (name ?? string.Empty);
+            return (targetPath ?? string.Empty) + "||" + kind + "||" + (groupPath ?? string.Empty).Replace(
+                "\\",
+                "/") + "||" + (name ?? string.Empty);
         }
 
         /// <summary>
@@ -395,7 +433,9 @@ namespace EidoTiaWorkbench.Core.Inventory {
         /// Determines whether a file can be parsed as XML.
         /// </summary>
         /// <param name="filePath">Path to the file to inspect.</param>
-        /// <returns><see langword="true"/> when the file is well-formed XML; otherwise <see langword="false"/>.</returns>
+        /// <returns>
+        /// <see langword="true"/> when the file is well-formed XML; otherwise <see langword="false"/>.
+        /// </returns>
         private static bool LooksLikeXml(string filePath) {
             try {
                 XDocument.Load(filePath);
@@ -425,7 +465,9 @@ namespace EidoTiaWorkbench.Core.Inventory {
         /// </summary>
         /// <param name="repoRoot">Absolute repository root path.</param>
         /// <param name="filePath">Absolute file path.</param>
-        /// <returns><see langword="true"/> when the file is under the metadata folder; otherwise <see langword="false"/>.</returns>
+        /// <returns>
+        /// <see langword="true"/> when the file is under the metadata folder; otherwise <see langword="false"/>.
+        /// </returns>
         private static bool IsUnderMetaFolder(string repoRoot, string filePath) {
             var rel = MakeRelativePath(repoRoot, filePath).Replace("\\", "/");
             return rel.StartsWith("meta/", StringComparison.OrdinalIgnoreCase);

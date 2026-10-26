@@ -19,7 +19,9 @@ namespace EidoTiaWorkbench.Controls {
         /// Initializes a new instance of the <see cref="StatusBadge"/> class.
         /// </summary>
         public StatusBadge() {
-            this.SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            this.SetStyle(
+                ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer,
+                true);
             this.AutoSize = true;
 
             // Badges keep a small touch target while still auto-sizing for longer translated states.

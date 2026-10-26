@@ -28,12 +28,18 @@ namespace EidoTiaWorkbench.Core.Integration {
             return match.Success ? int.Parse(match.Groups["v"].Value) : 0;
         }
 
-        /// <summary>Checks API identity and runtime prerequisites; this does not certify live engineering support.</summary>
+        /// <summary>
+        /// Checks API identity and runtime prerequisites; this does not certify live engineering support.
+        /// </summary>
         /// <param name="path">Candidate API directory.</param>
         /// <param name="source">Origin recorded for diagnostics.</param>
         /// <returns>Validated evidence or an unusable installation with the failure reason.</returns>
         public static OpennessInstallation Validate(string path, string source = "Custom") {
-            var result = new OpennessInstallation { ApiPath = path, Source = source, MajorVersion = ParseVersion(path) };
+            var result = new OpennessInstallation {
+                ApiPath = path,
+                Source = source,
+                MajorVersion = ParseVersion(path),
+            };
             try {
                 if (string.IsNullOrWhiteSpace(path)) {
                     throw new ArgumentException("An Openness API directory is required.", nameof(path));
@@ -41,11 +47,16 @@ namespace EidoTiaWorkbench.Core.Integration {
 
                 result.ApiPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(path.Trim().Trim('"')));
                 var modular = File.Exists(Path.Combine(result.ApiPath, "Siemens.Engineering.Base.dll"));
-                var names = modular ? new[] { "Siemens.Engineering.Base", "Siemens.Engineering.Step7", "Siemens.Engineering.WinCC" } : new[] { "Siemens.Engineering", "Siemens.Engineering.Hmi" };
+                var names = modular ? new[] {
+                    "Siemens.Engineering.Base",
+                    "Siemens.Engineering.Step7",
+                    "Siemens.Engineering.WinCC",
+                } : new[] { "Siemens.Engineering", "Siemens.Engineering.Hmi" };
                 int major = 0;
                 foreach (var name in names) {
                     var identity = AssemblyName.GetAssemblyName(Path.Combine(result.ApiPath, name + ".dll"));
-                    var token = BitConverter.ToString(identity.GetPublicKeyToken()).Replace("-", string.Empty).ToLowerInvariant();
+                    var token = BitConverter.ToString(
+                        identity.GetPublicKeyToken()).Replace("-", string.Empty).ToLowerInvariant();
                     if (identity.Name != name || token != "29bfe5fdf4ba5d3b") {
                         throw new InvalidDataException("Unexpected Siemens assembly identity: " + name);
                     }
@@ -65,14 +76,24 @@ namespace EidoTiaWorkbench.Core.Integration {
                     throw new InvalidDataException("Modular API version has no verified adapter.");
                 }
 
-                if (modular && !string.Equals(new DirectoryInfo(result.ApiPath).Name, "net48", StringComparison.OrdinalIgnoreCase)) {
+                if (modular && !string.Equals(
+                    new DirectoryInfo(result.ApiPath).Name,
+                    "net48",
+                    StringComparison.OrdinalIgnoreCase)) {
                     throw new InvalidDataException("Select the V21 net48 API, not the modern .NET API.");
                 }
 
                 result.IsValid = true;
-                result.Diagnostic = result.HasAdapter ? "API identities verified; x64 .NET Framework 4.8 worker. Live engineering validation required." : "Detected classic API; adapter not implemented or verified.";
+                result.Diagnostic = result.HasAdapter
+                    ? "API identities verified; x64 .NET Framework 4.8 worker. Live engineering validation required."
+                    : "Detected classic API; adapter not implemented or verified.";
             }
-            catch (Exception ex) when (ex is IOException || ex is ArgumentException || ex is BadImageFormatException || ex is UnauthorizedAccessException || ex is NotSupportedException || ex is System.Security.SecurityException) {
+            catch (Exception ex) when (ex is IOException
+                || ex is ArgumentException
+                || ex is BadImageFormatException
+                || ex is UnauthorizedAccessException
+                || ex is NotSupportedException
+                || ex is System.Security.SecurityException) {
                 result.Diagnostic = ex.Message;
             }
 
@@ -104,7 +125,10 @@ namespace EidoTiaWorkbench.Core.Integration {
                 }
             }
 
-            foreach (var root in new[] { Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) }) {
+            foreach (var root in new[] {
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            }) {
                 var automation = Path.Combine(root, "Siemens", "Automation");
                 if (!Directory.Exists(automation)) {
                     continue;
@@ -119,15 +143,27 @@ namespace EidoTiaWorkbench.Core.Integration {
                 .Select(x => x.First()).OrderByDescending(x => x.MajorVersion).ToList();
         }
 
+        /// <summary>Adds candidate evidence, retaining path-access failures as diagnostics.</summary>
+        /// <param name="results">Installation evidence appended during discovery.</param>
+        /// <param name="path">Optional directory or DLL path, with environment variables allowed.</param>
+        /// <param name="source">Origin retained in each candidate for diagnostics.</param>
         private void AddPath(List<OpennessInstallation> results, string path, string source) {
             try {
                 this.AddPathCore(results, path, source);
             }
-            catch (Exception ex) when (ex is IOException || ex is ArgumentException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException || ex is NotSupportedException) {
+            catch (Exception ex) when (ex is IOException
+                || ex is ArgumentException
+                || ex is UnauthorizedAccessException
+                || ex is System.Security.SecurityException
+                || ex is NotSupportedException) {
                 results.Add(new OpennessInstallation { ApiPath = path, Source = source, Diagnostic = ex.Message });
             }
         }
 
+        /// <summary>Expands an API, DLL or portal path into candidates without loading Siemens assemblies.</summary>
+        /// <param name="results">Installation evidence appended during discovery.</param>
+        /// <param name="path">Optional directory or DLL path, with environment variables allowed.</param>
+        /// <param name="source">Origin retained in each candidate for diagnostics.</param>
         private void AddPathCore(List<OpennessInstallation> results, string path, string source) {
             if (string.IsNullOrWhiteSpace(path)) {
                 return;
@@ -147,7 +183,12 @@ namespace EidoTiaWorkbench.Core.Integration {
                 }
             }
 
-            var found = paths.Where(p => File.Exists(Path.Combine(p, "Siemens.Engineering.Base.dll")) || File.Exists(Path.Combine(p, "Siemens.Engineering.dll"))).ToList();
+            var found = paths.Where(
+                p => File.Exists(
+                    Path.Combine(
+                        p,
+                        "Siemens.Engineering.Base.dll")) || File.Exists(
+                            Path.Combine(p, "Siemens.Engineering.dll"))).ToList();
             if (found.Count == 0) {
                 results.Add(Validate(path, source));
             }
@@ -158,6 +199,10 @@ namespace EidoTiaWorkbench.Core.Integration {
             }
         }
 
+        /// <summary>Collects rooted path values from registry subkeys with a bounded recursion depth.</summary>
+        /// <param name="key">Caller-owned registry key; only keys opened here are disposed here.</param>
+        /// <param name="results">Installation evidence appended during discovery.</param>
+        /// <param name="depth">Current traversal depth; values above six stop recursion.</param>
         private void ReadRegistry(RegistryKey key, List<OpennessInstallation> results, int depth) {
             if (depth > 6) {
                 return;

@@ -26,13 +26,21 @@ namespace EidoTiaWorkbench.Core.Model {
         /// <param name="groupPath">Group path inside PLC software, or an empty value for the root group.</param>
         /// <param name="name">TIA object name shown in the engineering project.</param>
         /// <param name="kind">Artifact kind used to select export and import handling.</param>
-        /// <param name="logicalKey">Stable unique key used for selection persistence and later object resolution.</param>
+        /// <param name="logicalKey">
+        /// Stable unique key used for selection persistence and later object resolution.
+        /// </param>
         /// <param name="targetType">Optional human-readable target type discovered from TIA Portal.</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="cpuPath"/>, <paramref name="name"/>, or
         /// <paramref name="logicalKey"/> is <see langword="null"/>.
         /// </exception>
-        public ExportItem(string cpuPath, string groupPath, string name, ExportKind kind, string logicalKey, string targetType = null)
+        public ExportItem(
+            string cpuPath,
+            string groupPath,
+            string name,
+            ExportKind kind,
+            string logicalKey,
+            string targetType = null)
             : this(
                 cpuPath,
                 groupPath,
@@ -86,7 +94,9 @@ namespace EidoTiaWorkbench.Core.Model {
             this.CanImport = canImport;
             this.UnavailableReason = unavailableReason ?? string.Empty;
             this.Dependencies = (dependencies ?? Enumerable.Empty<string>()).ToList().AsReadOnly();
-            this.Metadata = new Dictionary<string, string>(metadata ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
+            this.Metadata = new Dictionary<string, string>(
+                metadata ?? new Dictionary<string, string>(),
+                StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>

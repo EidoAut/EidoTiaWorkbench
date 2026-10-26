@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
+using EidoTiaWorkbench.Core.Integration;
 using EidoTiaWorkbench.Core.Inventory;
 using EidoTiaWorkbench.Core.Model;
 
@@ -25,11 +26,15 @@ namespace EidoTiaWorkbench.Core.Import {
         /// </summary>
         /// <param name="selection">Repository artifacts selected for import.</param>
         /// <param name="dependencyPlan">Dependency plan produced for the same selection.</param>
+        /// <param name="targetMajor">Selected API major version, or null when compatibility is not established.</param>
         /// <returns>A preflight result containing human-readable issues.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="selection"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="selection"/> is <see langword="null"/>.
+        /// </exception>
         public ImportPreflightResult Validate(
             IReadOnlyCollection<RepositoryArtifact> selection,
-            ImportDependencyPlan dependencyPlan) {
+            ImportDependencyPlan dependencyPlan,
+            int? targetMajor = null) {
             if (selection == null) {
                 throw new ArgumentNullException(nameof(selection));
             }
@@ -38,11 +43,35 @@ namespace EidoTiaWorkbench.Core.Import {
             var artifacts = selection.Where(a => a != null && a.Item != null).ToList();
             var namesByKind = BuildNamesByKind(artifacts);
 
+            if (!targetMajor.HasValue) {
+                result.Add(new ImportValidationIssue(
+                    ImportValidationSeverity.Warning,
+                    "Version validation",
+                    null,
+                    "No target API selected; cross-version compatibility has not been established."));
+            }
+
             ValidateSelection(artifacts, result);
             ValidateDependencies(dependencyPlan, result);
 
             foreach (var artifact in artifacts) {
                 ValidateRepositoryArtifact(artifact, result);
+                if (!File.Exists(artifact.RepositoryPath)) {
+                    continue;
+                }
+
+                if (targetMajor.HasValue) {
+                    try {
+                        ImportVersionGuard.Validate(artifact.RepositoryPath, targetMajor.Value);
+                    }
+                    catch (Exception ex) when (ex is IOException || ex is InvalidDataException || ex is XmlException ||
+                        ex is System.Runtime.Serialization.SerializationException || ex is UnauthorizedAccessException) {
+                        result.Add(new ImportValidationIssue(
+                            ImportValidationSeverity.Error, "Version validation", artifact, ex.Message));
+                        continue;
+                    }
+                }
+
                 if (ArtifactCatalog.Get(artifact.Item.Kind).Format == ArtifactFormat.Xml) {
                     ValidateXmlArtifact(artifact, artifacts, namesByKind, result);
                 }
@@ -125,11 +154,13 @@ namespace EidoTiaWorkbench.Core.Import {
             }
 
             if (!artifact.Item.CanImport || !descriptor.CanImport) {
+                var message = "Artifact is not import-capable through the confirmed Openness V21 pipeline. " +
+                    descriptor.Limitations;
                 result.Add(new ImportValidationIssue(
                     ImportValidationSeverity.Error,
                     "Repository validation",
                     artifact,
-                    "Artifact is not import-capable through the confirmed Openness V21 pipeline. " + descriptor.Limitations));
+                    message));
             }
 
             if (string.IsNullOrWhiteSpace(artifact.RepositoryPath) || !File.Exists(artifact.RepositoryPath)) {
@@ -181,7 +212,9 @@ namespace EidoTiaWorkbench.Core.Import {
             ImportPreflightResult result) {
             XDocument document;
             try {
-                document = XDocument.Load(artifact.RepositoryPath, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
+                document = XDocument.Load(
+                    artifact.RepositoryPath,
+                    LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
             }
             catch (XmlException ex) {
                 result.Add(new ImportValidationIssue(
@@ -215,11 +248,15 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="artifact">Artifact being validated.</param>
         /// <param name="root">Root XML element.</param>
         /// <param name="result">Mutable validation result.</param>
-        private static void ValidateExpectedRoot(RepositoryArtifact artifact, XElement root, ImportPreflightResult result) {
+        private static void ValidateExpectedRoot(
+            RepositoryArtifact artifact,
+            XElement root,
+            ImportPreflightResult result) {
             var rootName = root.Name.LocalName ?? string.Empty;
             if (artifact.Item.Kind == ExportKind.HmiScreen &&
                 rootName.IndexOf("Screen", StringComparison.OrdinalIgnoreCase) < 0 &&
-                root.Descendants().Take(32).All(e => e.Name.LocalName.IndexOf("Screen", StringComparison.OrdinalIgnoreCase) < 0)) {
+                root.Descendants().Take(
+                    32).All(e => e.Name.LocalName.IndexOf("Screen", StringComparison.OrdinalIgnoreCase) < 0)) {
                 result.Add(new ImportValidationIssue(
                     ImportValidationSeverity.Warning,
                     "XML hierarchy validation",
@@ -244,7 +281,10 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="artifact">Artifact being validated.</param>
         /// <param name="document">Parsed XML document.</param>
         /// <param name="result">Mutable validation result.</param>
-        private static void ValidateDuplicateIds(RepositoryArtifact artifact, XDocument document, ImportPreflightResult result) {
+        private static void ValidateDuplicateIds(
+            RepositoryArtifact artifact,
+            XDocument document,
+            ImportPreflightResult result) {
             var ids = document.Descendants()
                 .SelectMany(e => e.Attributes())
                 .Where(IsIdAttribute)
@@ -268,7 +308,10 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="artifact">Artifact being validated.</param>
         /// <param name="document">Parsed XML document.</param>
         /// <param name="result">Mutable validation result.</param>
-        private static void ValidateMandatoryIds(RepositoryArtifact artifact, XDocument document, ImportPreflightResult result) {
+        private static void ValidateMandatoryIds(
+            RepositoryArtifact artifact,
+            XDocument document,
+            ImportPreflightResult result) {
             foreach (var element in document.Descendants().Where(HasObjectName).Take(200)) {
                 if (!element.Attributes().Any(IsIdAttribute)) {
                     result.Add(new ImportValidationIssue(
@@ -286,7 +329,10 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="artifact">Artifact being validated.</param>
         /// <param name="document">Parsed XML document.</param>
         /// <param name="result">Mutable validation result.</param>
-        private static void ValidateObjectReferences(RepositoryArtifact artifact, XDocument document, ImportPreflightResult result) {
+        private static void ValidateObjectReferences(
+            RepositoryArtifact artifact,
+            XDocument document,
+            ImportPreflightResult result) {
             var idValues = new HashSet<string>(
                 document.Descendants()
                     .SelectMany(e => e.Attributes())
@@ -301,11 +347,13 @@ namespace EidoTiaWorkbench.Core.Import {
                 .Where(a => LooksLikeLocalReference(a.Value))
                 .Take(200)) {
                 if (!idValues.Contains(reference.Value)) {
+                    var message = "XML reference does not resolve to a local ID: " + reference.Name.LocalName +
+                        "='" + reference.Value + "'.";
                     result.Add(new ImportValidationIssue(
                         ImportValidationSeverity.Warning,
                         "XML reference validation",
                         artifact,
-                        "XML reference does not resolve to a local ID: " + reference.Name.LocalName + "='" + reference.Value + "'."));
+                        message));
                 }
             }
         }
@@ -357,7 +405,10 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="artifact">Artifact being validated.</param>
         /// <param name="document">Parsed XML document.</param>
         /// <param name="result">Mutable validation result.</param>
-        private static void ValidateHmiDatatypeMetadata(RepositoryArtifact artifact, XDocument document, ImportPreflightResult result) {
+        private static void ValidateHmiDatatypeMetadata(
+            RepositoryArtifact artifact,
+            XDocument document,
+            ImportPreflightResult result) {
             if (!artifact.Item.IsHmi) {
                 return;
             }
@@ -365,7 +416,9 @@ namespace EidoTiaWorkbench.Core.Import {
             foreach (var attribute in document.Descendants()
                 .SelectMany(e => e.Attributes())
                 .Where(a => a.Name.LocalName.IndexOf("DataType", StringComparison.OrdinalIgnoreCase) >= 0)
-                .Where(a => string.IsNullOrWhiteSpace(a.Value) || string.Equals(a.Value, "Unknown", StringComparison.OrdinalIgnoreCase))
+                .Where(a =>
+                    string.IsNullOrWhiteSpace(a.Value) ||
+                    string.Equals(a.Value, "Unknown", StringComparison.OrdinalIgnoreCase))
                 .Take(20)) {
                 result.Add(new ImportValidationIssue(
                     ImportValidationSeverity.Warning,
@@ -416,7 +469,8 @@ namespace EidoTiaWorkbench.Core.Import {
         /// </summary>
         /// <param name="artifacts">Artifacts to index.</param>
         /// <returns>Case-insensitive artifact name index by kind.</returns>
-        private static IDictionary<ExportKind, HashSet<string>> BuildNamesByKind(IEnumerable<RepositoryArtifact> artifacts) {
+        private static IDictionary<ExportKind, HashSet<string>> BuildNamesByKind(
+            IEnumerable<RepositoryArtifact> artifacts) {
             var result = new Dictionary<ExportKind, HashSet<string>>();
             foreach (var artifact in artifacts) {
                 HashSet<string> names;
@@ -483,9 +537,11 @@ namespace EidoTiaWorkbench.Core.Import {
         /// <param name="element">Element to inspect.</param>
         /// <returns><see langword="true"/> when the element has a name and is object-like.</returns>
         private static bool HasObjectName(XElement element) {
-            return element.Attributes().Any(a => string.Equals(a.Name.LocalName, "Name", StringComparison.OrdinalIgnoreCase)) &&
-                   element.Attributes().Any(a => a.Name.LocalName.IndexOf("Type", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                 a.Name.LocalName.IndexOf("Class", StringComparison.OrdinalIgnoreCase) >= 0);
+            return element.Attributes().Any(a =>
+                string.Equals(a.Name.LocalName, "Name", StringComparison.OrdinalIgnoreCase)) &&
+                element.Attributes().Any(a =>
+                    a.Name.LocalName.IndexOf("Type", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    a.Name.LocalName.IndexOf("Class", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         /// <summary>

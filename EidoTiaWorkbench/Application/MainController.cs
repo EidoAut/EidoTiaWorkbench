@@ -36,12 +36,15 @@ namespace EidoTiaWorkbench.Application {
         private IOpennessAdapter _session;
         private CancellationTokenSource _currentCancellation;
         private bool _disposed;
+        private string _scanProjectPath;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainController"/> class.
         /// </summary>
         /// <param name="state">Shared application state updated by controller operations.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="state"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="state"/> is <see langword="null"/>.
+        /// </exception>
         public MainController(ApplicationState state) {
             this._state = state ?? throw new ArgumentNullException(nameof(state));
             this._uiContext = SynchronizationContext.Current;
@@ -58,7 +61,9 @@ namespace EidoTiaWorkbench.Application {
             try {
                 this.IntegrationSettings = IntegrationSettings.Load();
             }
-            catch (Exception ex) when (ex is IOException || ex is System.Runtime.Serialization.SerializationException || ex is System.Xml.XmlException) {
+            catch (Exception ex) when (ex is IOException
+                || ex is System.Runtime.Serialization.SerializationException
+                || ex is System.Xml.XmlException) {
                 this.IntegrationSettings = new IntegrationSettings();
                 this._logger.Warn("Integration settings could not be loaded: " + ex.Message);
             }
@@ -103,7 +108,9 @@ namespace EidoTiaWorkbench.Application {
             this.Installations = new OpennessDiscovery().Discover(this.IntegrationSettings.CustomPath);
             this.SelectedInstallation = this.IntegrationSettings.Select(this.Installations);
             this._state.HasOpennessAdapter = this.SelectedInstallation != null;
-            this._state.IntegrationVersion = this.SelectedInstallation == null ? "Offline" : "TIA V" + this.SelectedInstallation.MajorVersion;
+            this._state.IntegrationVersion = this.SelectedInstallation == null
+                ? "Offline"
+                : "TIA V" + this.SelectedInstallation.MajorVersion;
         }
 
         /// <summary>Switches only while disconnected and idle, replacing the entire worker process.</summary>
@@ -111,7 +118,8 @@ namespace EidoTiaWorkbench.Application {
         /// <param name="customPath">Additional discovery directory supplied by the user.</param>
         public void ApplyIntegrationSettings(string apiPath, string customPath) {
             if (this._state.CurrentOperation.IsBusy || this._session.IsPortalOpen) {
-                throw new InvalidOperationException("Disconnect TIA Portal and wait for the current operation before switching API versions.");
+                throw new InvalidOperationException(
+                    "Disconnect TIA Portal and wait for the current operation before switching API versions.");
             }
 
             var settings = new IntegrationSettings { SelectedApiPath = apiPath, CustomPath = customPath };
@@ -128,12 +136,10 @@ namespace EidoTiaWorkbench.Application {
             this._state.SetPortalInstances(new List<TiaPortalInstanceInfo>());
             this._state.SetLastScan(new List<ExportItem>());
             this._state.ActiveProject = null;
-            this.Log(
-                ActivitySeverity.Info,
-                "Integration",
-                string.Empty,
-                string.Empty,
-                this.SelectedInstallation == null ? "Offline mode: no usable adapter selected." : this.SelectedInstallation.ToString());
+            var integrationMessage = this.SelectedInstallation == null
+                ? "Offline mode: no usable adapter selected."
+                : this.SelectedInstallation.ToString();
+            this.Log(ActivitySeverity.Info, "Integration", string.Empty, string.Empty, integrationMessage);
         }
 
         /// <summary>
@@ -163,7 +169,12 @@ namespace EidoTiaWorkbench.Application {
                 OperationState.Connecting,
                 "Attach to TIA Portal",
                 async () => {
-                    this.UpdateOperationProgress(OperationState.Connecting, "Connecting to TIA Portal...", 0, 0, isIndeterminate: true);
+                    this.UpdateOperationProgress(
+                        OperationState.Connecting,
+                        "Connecting to TIA Portal...",
+                        0,
+                        0,
+                        isIndeterminate: true);
                     if (!instanceIndex.HasValue) {
                         await this.RefreshPortalInstancesCoreAsync();
                         if (this._state.PortalInstances.Count > 1) {
@@ -178,9 +189,15 @@ namespace EidoTiaWorkbench.Application {
                         instanceIndex = this._state.PortalInstances[0].InstanceIndex;
                     }
 
+                    this.InvalidateScan();
                     await this._session.AttachToRunningPortalAsync(instanceIndex.Value);
                     await this.RefreshSessionStateAsync();
-                    this.Log(ActivitySeverity.Success, "Project", string.Empty, string.Empty, "Attached to TIA Portal.");
+                    this.Log(
+                        ActivitySeverity.Success,
+                        "Project",
+                        string.Empty,
+                        string.Empty,
+                        "Attached to TIA Portal.");
                     return new OperationSummary { Operation = "Attach to TIA Portal", Ok = 1 };
                 });
         }
@@ -195,10 +212,21 @@ namespace EidoTiaWorkbench.Application {
                 OperationState.Connecting,
                 "Start TIA Portal",
                 async () => {
-                    this.UpdateOperationProgress(OperationState.Connecting, "Starting TIA Portal...", 0, 0, isIndeterminate: true);
+                    this.UpdateOperationProgress(
+                        OperationState.Connecting,
+                        "Starting TIA Portal...",
+                        0,
+                        0,
+                        isIndeterminate: true);
+                    this.InvalidateScan();
                     await this._session.StartPortalAsync(withUserInterface);
                     await this.RefreshSessionStateAsync();
-                    this.Log(ActivitySeverity.Success, "Project", string.Empty, string.Empty, "Started a new TIA Portal instance.");
+                    this.Log(
+                        ActivitySeverity.Success,
+                        "Project",
+                        string.Empty,
+                        string.Empty,
+                        "Started a new TIA Portal instance.");
                     return new OperationSummary { Operation = "Start TIA Portal", Ok = 1 };
                 });
         }
@@ -218,11 +246,17 @@ namespace EidoTiaWorkbench.Application {
                 OperationState.OpeningProject,
                 "Open project",
                 async () => {
-                    this.UpdateOperationProgress(OperationState.OpeningProject, "Opening project...", 0, 0, isIndeterminate: true);
+                    this.UpdateOperationProgress(
+                        OperationState.OpeningProject,
+                        "Opening project...",
+                        0,
+                        0,
+                        isIndeterminate: true);
                     if (!this._session.IsPortalOpen) {
                         await this._session.StartPortalAsync(withUserInterface: true);
                     }
 
+                    this.InvalidateScan();
                     await this._session.OpenProjectAsync(projectPath);
                     await this.RefreshSessionStateAsync();
                     this.Log(ActivitySeverity.Success, "Project", string.Empty, projectPath, "Project opened.");
@@ -240,10 +274,21 @@ namespace EidoTiaWorkbench.Application {
                 OperationState.Connecting,
                 "Disconnect",
                 async () => {
-                    this.UpdateOperationProgress(OperationState.Connecting, "Disconnecting from TIA Portal...", 0, 0, isIndeterminate: true);
+                    this.UpdateOperationProgress(
+                        OperationState.Connecting,
+                        "Disconnecting from TIA Portal...",
+                        0,
+                        0,
+                        isIndeterminate: true);
+                    this.InvalidateScan();
                     await this._session.DisconnectAsync(closeOwnedPortal);
                     await this.RefreshSessionStateAsync();
-                    this.Log(ActivitySeverity.Info, "Project", string.Empty, string.Empty, "Disconnected from TIA Portal.");
+                    this.Log(
+                        ActivitySeverity.Info,
+                        "Project",
+                        string.Empty,
+                        string.Empty,
+                        "Disconnected from TIA Portal.");
                     return new OperationSummary { Operation = "Disconnect", Ok = 1 };
                 });
         }
@@ -259,9 +304,24 @@ namespace EidoTiaWorkbench.Application {
                 OperationState.LoadingInventory,
                 "Scan project",
                 async () => {
-                    this.UpdateOperationProgress(OperationState.LoadingInventory, "Reading inventory...", 0, 0, isIndeterminate: true);
+                    this.UpdateOperationProgress(
+                        OperationState.LoadingInventory,
+                        "Reading inventory...",
+                        0,
+                        0,
+                        isIndeterminate: true);
+                    this.InvalidateScan();
                     this._state.ScanState = ScanState.Scanning;
-                    var response = await Task.Run(() => this._session.Execute(new WorkerMessage { Command = "Scan", Profile = profile, Flag = includeDbs }, CancellationToken.None));
+                    var response = await Task.Run(
+                        () => this._session.Execute(
+                            new WorkerMessage { Command = "Scan", Profile = profile, Flag = includeDbs },
+                            CancellationToken.None));
+                    if (response.Project == null || !response.Project.IsProjectOpen ||
+                        string.IsNullOrWhiteSpace(response.Project.ProjectPath)) {
+                        throw new InvalidOperationException("Scan has no verified project identity. Scan again.");
+                    }
+
+                    this._scanProjectPath = response.Project.ProjectPath;
                     var items = response.Items;
                     this._state.SetLastScan(items);
                     this._state.ScanState = ScanState.Ready;
@@ -270,12 +330,21 @@ namespace EidoTiaWorkbench.Application {
                     if (project != null) {
                         project.PlcTargets.Clear();
                         project.HmiTargets.Clear();
-                        project.PlcTargets.AddRange(items.Where(i => i.IsPlc).Select(i => i.CpuPath).Distinct(StringComparer.OrdinalIgnoreCase));
-                        project.HmiTargets.AddRange(items.Where(i => i.IsHmi).Select(i => i.CpuPath).Distinct(StringComparer.OrdinalIgnoreCase));
+                        project.PlcTargets.AddRange(
+                            items.Where(
+                                i => i.IsPlc).Select(i => i.CpuPath).Distinct(StringComparer.OrdinalIgnoreCase));
+                        project.HmiTargets.AddRange(
+                            items.Where(
+                                i => i.IsHmi).Select(i => i.CpuPath).Distinct(StringComparer.OrdinalIgnoreCase));
                         this._state.ActiveProject = project;
                     }
 
-                    this.Log(ActivitySeverity.Success, "Scan", string.Empty, string.Empty, "Scan complete: " + items.Count + " artifact(s).");
+                    this.Log(
+                        ActivitySeverity.Success,
+                        "Scan",
+                        string.Empty,
+                        string.Empty,
+                        "Scan complete: " + items.Count + " artifact(s).");
                     return new OperationSummary { Operation = "Scan project", Ok = items.Count };
                 });
         }
@@ -285,7 +354,9 @@ namespace EidoTiaWorkbench.Application {
         /// </summary>
         /// <param name="items">Artifacts selected by the user.</param>
         /// <param name="normalizePlcXml">Whether exported PLC XML should be normalized for source control.</param>
-        /// <param name="preserveHmiXml">Whether exported HMI XML should be preserved exactly as Openness writes it.</param>
+        /// <param name="preserveHmiXml">
+        /// Whether exported HMI XML should be preserved exactly as Openness writes it.
+        /// </param>
         /// <param name="incremental">Whether unchanged files should be skipped through manifest comparison.</param>
         /// <param name="operationName">Operation name shown in progress and activity messages.</param>
         /// <returns>A task that completes when the export operation has finished.</returns>
@@ -318,7 +389,12 @@ namespace EidoTiaWorkbench.Application {
             var cts = this._currentCancellation;
             if (cts != null && !cts.IsCancellationRequested) {
                 cts.Cancel();
-                this.Log(ActivitySeverity.Warning, "Cancel", string.Empty, string.Empty, "Cancel after current artifact requested.");
+                this.Log(
+                    ActivitySeverity.Warning,
+                    "Cancel",
+                    string.Empty,
+                    string.Empty,
+                    "Cancel after current artifact requested.");
             }
         }
 
@@ -353,7 +429,8 @@ namespace EidoTiaWorkbench.Application {
                 StringComparer.OrdinalIgnoreCase);
             var retryItems = items.Where(i => retryKeys.Contains(i.LogicalKey)).ToList();
             if (retryItems.Count == 0) {
-                throw new InvalidOperationException("The previous manifest does not contain retryable artifacts from the current scan.");
+                throw new InvalidOperationException(
+                    "The previous manifest does not contain retryable artifacts from the current scan.");
             }
 
             await this.RunCancellableOperationAsync(
@@ -375,7 +452,14 @@ namespace EidoTiaWorkbench.Application {
         /// </summary>
         /// <param name="repositoryPath">Repository folder path to store in application state.</param>
         public void SetSelectedRepository(string repositoryPath) {
-            this._state.SelectedRepository = repositoryPath;
+            if (!string.Equals(this._state.SelectedRepository, repositoryPath, StringComparison.OrdinalIgnoreCase)) {
+                if (this._state.CurrentOperation.IsBusy) {
+                    throw new InvalidOperationException("Wait for the current operation before changing workspace.");
+                }
+
+                this._state.SetRepositoryInventory(null);
+                this._state.SelectedRepository = repositoryPath;
+            }
         }
 
         /// <summary>
@@ -393,9 +477,15 @@ namespace EidoTiaWorkbench.Application {
                 OperationState.LoadingRepository,
                 "Load workspace",
                 async () => {
-                    this.UpdateOperationProgress(OperationState.LoadingRepository, "Loading workspace...", 0, 0, isIndeterminate: true);
-                    this._state.SelectedRepository = repositoryPath;
+                    this.UpdateOperationProgress(
+                        OperationState.LoadingRepository,
+                        "Loading workspace...",
+                        0,
+                        0,
+                        isIndeterminate: true);
                     var artifacts = await Task.Run(() => this._repositoryInventory.Scan(repositoryPath));
+                    this._state.SetRepositoryInventory(null);
+                    this._state.SelectedRepository = repositoryPath;
                     this._state.SetRepositoryInventory(artifacts);
                     this.Log(
                         ActivitySeverity.Info,
@@ -447,9 +537,14 @@ namespace EidoTiaWorkbench.Application {
                         "meta",
                         "import-backups",
                         DateTime.Now.ToString("yyyyMMdd_HHmmss"));
-                    this.UpdateOperationProgress(OperationState.Validating, "Validating import selection...", 0, selection.Count, isIndeterminate: false);
+                    this.UpdateOperationProgress(
+                        OperationState.Validating,
+                        "Validating import selection...",
+                        0,
+                        selection.Count,
+                        isIndeterminate: false);
                     var plan = await Task.Run(() => this._importPlanner.Build(selection), token);
-                    var preflight = await Task.Run(() => this._importValidator.Validate(selection, plan), token);
+                    var preflight = await Task.Run(() => this._importValidator.Validate(selection, plan, this.SelectedInstallation?.MajorVersion), token);
                     if (preflight.HasBlockingErrors) {
                         var failedSummary = new OperationSummary {
                             Operation = "Import selected",
@@ -461,11 +556,21 @@ namespace EidoTiaWorkbench.Application {
                         };
                         AddPreflightMessages(failedSummary, preflight);
                         AddImportPlanMessages(failedSummary, plan);
-                        this.Log(ActivitySeverity.Error, "Import", string.Empty, this._state.SelectedRepository, BuildResultText(failedSummary));
+                        this.Log(
+                            ActivitySeverity.Error,
+                            "Import",
+                            string.Empty,
+                            this._state.SelectedRepository,
+                            BuildResultText(failedSummary));
                         return failedSummary;
                     }
 
-                    this.UpdateOperationProgress(OperationState.Importing, "Importing artifacts...", 0, plan.OrderedArtifacts.Count, isIndeterminate: false);
+                    this.UpdateOperationProgress(
+                        OperationState.Importing,
+                        "Importing artifacts...",
+                        0,
+                        plan.OrderedArtifacts.Count,
+                        isIndeterminate: false);
                     var result = (await Task.Run(() => this._session.Execute(
                         new WorkerMessage {
                             Command = "Import",
@@ -505,7 +610,12 @@ namespace EidoTiaWorkbench.Application {
                     var severity = result.Errors.Count > 0
                         ? ActivitySeverity.Error
                         : result.Warnings.Count > 0 ? ActivitySeverity.Warning : ActivitySeverity.Success;
-                    this.Log(severity, "Import", string.Empty, this._state.SelectedRepository, BuildResultText(summary));
+                    this.Log(
+                        severity,
+                        "Import",
+                        string.Empty,
+                        this._state.SelectedRepository,
+                        BuildResultText(summary));
                     return summary;
                 });
         }
@@ -529,20 +639,38 @@ namespace EidoTiaWorkbench.Application {
                 "Dry run",
                 async () => {
                     var selection = artifacts.ToList();
-                    this.UpdateOperationProgress(OperationState.Validating, "Validating workspace artifacts...", 0, selection.Count, isIndeterminate: false);
+                    this.UpdateOperationProgress(
+                        OperationState.Validating,
+                        "Validating workspace artifacts...",
+                        0,
+                        selection.Count,
+                        isIndeterminate: false);
                     var plan = await Task.Run(() => this._importPlanner.Build(selection));
-                    var preflight = await Task.Run(() => this._importValidator.Validate(selection, plan));
+                    var preflight = await Task.Run(() => this._importValidator.Validate(selection, plan, this.SelectedInstallation?.MajorVersion));
                     ImportResult result;
                     if (preflight.HasBlockingErrors) {
                         result = new ImportResult();
                     }
                     else {
-                        this.UpdateOperationProgress(OperationState.Comparing, "Simulating import actions...", 0, plan.OrderedArtifacts.Count, isIndeterminate: false);
+                        this.UpdateOperationProgress(
+                            OperationState.Comparing,
+                            "Simulating import actions...",
+                            0,
+                            plan.OrderedArtifacts.Count,
+                            isIndeterminate: false);
                         result = this.CanUseOpenness && this._session.IsPortalOpen
-                            ? (await Task.Run(() => this._session.Execute(new WorkerMessage { Command = "Preview", Artifacts = plan.OrderedArtifacts.ToList(), Policy = conflictPolicy }, CancellationToken.None))).Import
+                            ? (await Task.Run(
+                                () => this._session.Execute(
+                                    new WorkerMessage {
+                                        Command = "Preview",
+                                        Artifacts = plan.OrderedArtifacts.ToList(),
+                                        Policy = conflictPolicy,
+                                    },
+                                    CancellationToken.None))).Import
                             : new ImportResult();
                         if (!this._session.IsPortalOpen) {
-                            result.Warnings.Add("Offline validation only: target conflicts and Siemens import compatibility were not checked.");
+                            result.Warnings.Add(
+                                "Offline validation only: target conflicts and Siemens import compatibility were not checked.");
                         }
                     }
 
@@ -562,7 +690,10 @@ namespace EidoTiaWorkbench.Application {
                     summary.Messages.Add("Manifest validation: completed.");
                     summary.Messages.Add("XML validation: completed.");
                     summary.Messages.Add("Dependency validation: completed.");
-                    summary.Messages.Add(this._session.IsPortalOpen ? "Import simulation: target lookup only; Siemens XML compatibility is not verified." : "Offline validation: no target lookup or engineering changes performed.");
+                    summary.Messages.Add(
+                        this._session.IsPortalOpen
+                            ? "Import simulation: target lookup only; Siemens XML compatibility is not verified."
+                            : "Offline validation: no target lookup or engineering changes performed.");
                     AddPreflightMessages(summary, preflight);
                     AddImportPlanMessages(summary, plan);
 
@@ -615,6 +746,10 @@ namespace EidoTiaWorkbench.Application {
         /// <returns>A task that completes when state has been synchronized.</returns>
         public async Task RefreshSessionStateAsync() {
             var info = await this._session.GetProjectInfoAsync();
+            if (!info.IsPortalOpen || !info.IsProjectOpen ||
+                !string.Equals(this._scanProjectPath, info.ProjectPath, StringComparison.OrdinalIgnoreCase)) {
+                this.InvalidateScan();
+            }
 
             this._state.PortalConnectionState = info.IsPortalOpen
                 ? PortalConnectionState.Connected
@@ -661,7 +796,8 @@ namespace EidoTiaWorkbench.Application {
             }
 
             return string.Format(
-                "{0} - {10}: {1}, skipped: {2}, restricted: {3}, unavailable: {4}, unsupported: {5}, aborted: {6}, cancelled: {7}, warnings: {8}, errors: {9}",
+                "{0} - {10}: {1}, skipped: {2}, restricted: {3}, unavailable: {4}, unsupported: {5}, " +
+                    "aborted: {6}, cancelled: {7}, warnings: {8}, errors: {9}",
                 string.IsNullOrWhiteSpace(summary.Status) ? "Completed" : summary.Status,
                 summary.Ok,
                 summary.Skipped,
@@ -702,7 +838,9 @@ namespace EidoTiaWorkbench.Application {
 
             summary.Messages.Add("Dependency order:");
             foreach (var artifact in plan.OrderedArtifacts) {
-                summary.Messages.Add("  " + artifact.Item.Kind + " | " + artifact.Item.CpuPath + " | " + artifact.Item.GroupPath + " | " + artifact.Item.Name);
+                summary.Messages.Add(
+                    "  " + artifact.Item.Kind + " | " + artifact.Item.CpuPath + " | " + artifact.Item.GroupPath +
+                        " | " + artifact.Item.Name);
             }
         }
 
@@ -720,7 +858,12 @@ namespace EidoTiaWorkbench.Application {
                 return ActivitySeverity.Error;
             }
 
-            if (summary.Warnings > 0 || summary.Restricted > 0 || summary.Unavailable > 0 || summary.Unsupported > 0 || summary.Skipped > 0 || summary.Cancelled > 0) {
+            if (summary.Warnings > 0
+                || summary.Restricted > 0
+                || summary.Unavailable > 0
+                || summary.Unsupported > 0
+                || summary.Skipped > 0
+                || summary.Cancelled > 0) {
                 return ActivitySeverity.Warning;
             }
 
@@ -767,6 +910,13 @@ namespace EidoTiaWorkbench.Application {
             }
         }
 
+        /// <summary>Invalidates inventory before session changes or when its project identity is lost.</summary>
+        private void InvalidateScan() {
+            this._scanProjectPath = null;
+            this._state.SetLastScan(null);
+            this._state.ScanState = ScanState.NotScanned;
+        }
+
         private async Task RefreshPortalInstancesCoreAsync() {
             var instances = await this._session.GetRunningPortalInstancesAsync();
             this._state.SetPortalInstances(instances);
@@ -800,10 +950,17 @@ namespace EidoTiaWorkbench.Application {
             bool incremental,
             string operationName,
             CancellationToken cancellationToken) {
+            await this.RefreshSessionStateAsync();
+            if (string.IsNullOrWhiteSpace(this._scanProjectPath) || this._state.ScanState != ScanState.Ready ||
+                items.Any(item => !this._state.LastScan.Any(scanned => scanned.LogicalKey == item.LogicalKey))) {
+                throw new InvalidOperationException("Project inventory is stale. Scan the active project before exporting.");
+            }
+
             var selection = items.ToList();
             var result = (await Task.Run(() => this._session.Execute(
                 new WorkerMessage {
                     Command = "Export",
+                    ExpectedProjectPath = this._scanProjectPath,
                     Path = this._state.SelectedRepository,
                     Items = selection,
                     Normalize = normalizePlcXml,
@@ -885,7 +1042,10 @@ namespace EidoTiaWorkbench.Application {
         /// <param name="operationName">Display name of the operation.</param>
         /// <param name="body">Asynchronous operation body.</param>
         /// <returns>A task that completes when the operation finishes.</returns>
-        private async Task<OperationSummary> RunOperationAsync(OperationState state, string operationName, Func<Task<OperationSummary>> body) {
+        private async Task<OperationSummary> RunOperationAsync(
+            OperationState state,
+            string operationName,
+            Func<Task<OperationSummary>> body) {
             return await this.RunOperationAsync(state, operationName, body, canCancel: false);
         }
 
@@ -904,7 +1064,11 @@ namespace EidoTiaWorkbench.Application {
                 throw new ArgumentNullException(nameof(body));
             }
 
-            await this.RunOperationAsync(state, operationName, () => body(this._currentCancellation.Token), canCancel: true);
+            await this.RunOperationAsync(
+                state,
+                operationName,
+                () => body(this._currentCancellation.Token),
+                canCancel: true);
         }
 
         /// <summary>
@@ -948,7 +1112,12 @@ namespace EidoTiaWorkbench.Application {
                 stopwatch.Stop();
                 this._state.LastOperationSummary = summary;
                 this._state.LastOperationResult = BuildResultText(summary);
-                this.Log(GetSummarySeverity(summary), operationName, string.Empty, string.Empty, "Finished in " + stopwatch.Elapsed + ". " + BuildResultText(summary));
+                this.Log(
+                    GetSummarySeverity(summary),
+                    operationName,
+                    string.Empty,
+                    string.Empty,
+                    "Finished in " + stopwatch.Elapsed + ". " + BuildResultText(summary));
                 return summary;
             }
             catch (OperationCanceledException ex) {
@@ -960,7 +1129,13 @@ namespace EidoTiaWorkbench.Application {
                 };
                 this._state.LastOperationSummary = summary;
                 this._state.LastOperationResult = BuildResultText(summary);
-                this.Log(ActivitySeverity.Warning, operationName, string.Empty, string.Empty, "Cancelled after " + stopwatch.Elapsed + ".", ex.ToString());
+                this.Log(
+                    ActivitySeverity.Warning,
+                    operationName,
+                    string.Empty,
+                    string.Empty,
+                    "Cancelled after " + stopwatch.Elapsed + ".",
+                    ex.ToString());
                 return summary;
             }
             catch (Exception ex) {
@@ -969,9 +1144,28 @@ namespace EidoTiaWorkbench.Application {
                     Operation = operationName,
                     Errors = 1,
                 };
+                if (state == OperationState.LoadingInventory || !this._session.IsPortalOpen) {
+                    this.InvalidateScan();
+                    if (state == OperationState.LoadingInventory) {
+                        this._state.ScanState = ScanState.Error;
+                    }
+                }
+
+                if (!this._session.IsPortalOpen) {
+                    this._state.ActiveProject = null;
+                }
+
                 this._state.LastOperationResult = "Error: " + ex.Message;
-                this._state.PortalConnectionState = this._session.IsPortalOpen ? PortalConnectionState.Connected : PortalConnectionState.Error;
-                this.Log(ActivitySeverity.Error, operationName, string.Empty, string.Empty, ex.Message, ExceptionDiagnosticFormatter.Format(ex));
+                this._state.PortalConnectionState = this._session.IsPortalOpen
+                    ? PortalConnectionState.Connected
+                    : PortalConnectionState.Error;
+                this.Log(
+                    ActivitySeverity.Error,
+                    operationName,
+                    string.Empty,
+                    string.Empty,
+                    ex.Message,
+                    ExceptionDiagnosticFormatter.Format(ex));
                 throw;
             }
             finally {
@@ -992,7 +1186,12 @@ namespace EidoTiaWorkbench.Application {
         /// <param name="total">Total number of artifacts.</param>
         /// <param name="current">Current artifact, if available.</param>
         /// <param name="exception">Item-level warning or error, if available.</param>
-        private void UpdateProgress(string operationName, int done, int total, ExportItem current, Exception exception) {
+        private void UpdateProgress(
+            string operationName,
+            int done,
+            int total,
+            ExportItem current,
+            Exception exception) {
             this.PostToUi(() => {
                 this._state.CurrentOperation = new CurrentOperationInfo {
                     IsBusy = true,

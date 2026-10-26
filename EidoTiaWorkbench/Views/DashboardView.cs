@@ -58,11 +58,27 @@ namespace EidoTiaWorkbench.Views {
             header.SetText("Dashboard", "Connection, project and workspace status.");
 
             var actions = new OperationToolbar();
-            AddAction(actions, "Attach to TIA Portal", "project", (s, e) => this.AttachRequested?.Invoke(this, EventArgs.Empty));
-            AddAction(actions, "Open project", "project", (s, e) => this.OpenProjectRequested?.Invoke(this, EventArgs.Empty));
+            AddAction(
+                actions,
+                "Attach to TIA Portal",
+                "project",
+                (s, e) => this.AttachRequested?.Invoke(this, EventArgs.Empty));
+            AddAction(
+                actions,
+                "Open project",
+                "project",
+                (s, e) => this.OpenProjectRequested?.Invoke(this, EventArgs.Empty));
             AddAction(actions, "Scan project", "activity", (s, e) => this.ScanRequested?.Invoke(this, EventArgs.Empty));
-            AddAction(actions, "Export changed artifacts", "export", (s, e) => this.ExportChangedRequested?.Invoke(this, EventArgs.Empty));
-            AddAction(actions, "Open workspace", "project", (s, e) => this.OpenRepositoryRequested?.Invoke(this, EventArgs.Empty));
+            AddAction(
+                actions,
+                "Export changed artifacts",
+                "export",
+                (s, e) => this.ExportChangedRequested?.Invoke(this, EventArgs.Empty));
+            AddAction(
+                actions,
+                "Open workspace",
+                "project",
+                (s, e) => this.OpenRepositoryRequested?.Invoke(this, EventArgs.Empty));
 
             this._contentPanel = new Panel {
                 Dock = DockStyle.Fill,
@@ -156,14 +172,22 @@ namespace EidoTiaWorkbench.Views {
         /// <param name="state">Application state to display.</param>
         public void Bind(ApplicationState state) {
             var connected = state.PortalConnectionState == PortalConnectionState.Connected;
-            this._connection.SetConnected(connected, connected ? state.IntegrationVersion + " session available" : "No active Openness session");
+            this._connection.SetConnected(
+                connected,
+                connected ? state.IntegrationVersion + " session available" : "No active Openness session");
             this._session.SetContent("Session", state.PortalOwnership.ToString());
 
             var project = state.ActiveProject;
             this._project.SetContent("Active project", project == null ? "-" : project.Name);
-            this._tiaVersion.SetContent("TIA Portal version", project == null ? state.IntegrationVersion : project.Version);
-            this._plcTargets.SetContent("Detected PLC targets", project == null ? "0" : project.PlcTargets.Count.ToString());
-            this._hmiTargets.SetContent("Detected HMI targets", project == null ? "0" : project.HmiTargets.Count.ToString());
+            this._tiaVersion.SetContent(
+                "TIA Portal version",
+                project == null ? state.IntegrationVersion : project.Version);
+            this._plcTargets.SetContent(
+                "Detected PLC targets",
+                project == null ? "0" : project.PlcTargets.Count.ToString());
+            this._hmiTargets.SetContent(
+                "Detected HMI targets",
+                project == null ? "0" : project.HmiTargets.Count.ToString());
             this._repository.SetContent("Workspace folder", state.SelectedRepository);
             this._lastExport.SetContent("Last export", state.LastExport);
             this._lastImport.SetContent("Last import", state.LastImport);
@@ -211,7 +235,9 @@ namespace EidoTiaWorkbench.Views {
         /// </summary>
         private void UpdateCardLayout() {
             var availableWidth = this._contentPanel.ClientSize.Width;
-            var columns = availableWidth >= ThemeMetrics.Scale(this, 1100) ? 3 : availableWidth >= ThemeMetrics.Scale(this, 760) ? 2 : 1;
+            var columns = availableWidth >= ThemeMetrics.Scale(
+                this,
+                1100) ? 3 : availableWidth >= ThemeMetrics.Scale(this, 760) ? 2 : 1;
 
             this._cardsGrid.SuspendLayout();
             try {

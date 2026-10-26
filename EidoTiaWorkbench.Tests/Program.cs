@@ -40,6 +40,7 @@ namespace EidoTiaWorkbench.Tests {
             var tests = new List<Tuple<string, Action>>
             {
                 Tuple.Create("Modernization contracts", new Action(ModernizationTests.Run)),
+                Tuple.Create("Project identity accepts the V21 FileInfo path", new Action(TestProjectPathIdentity)),
                 Tuple.Create("Sanitize protects Windows paths", new Action(TestSanitize)),
                 Tuple.Create("Artifact catalog and adapter registry are consistent", new Action(TestCatalogConsistency)),
                 Tuple.Create("PLC output path uses PLC root", new Action(TestPlcOutputPath)),
@@ -423,6 +424,27 @@ namespace EidoTiaWorkbench.Tests {
                 AssertContains(probeDiagnostic, "SiemensDetail = openness detail");
                 AssertContains(probeDiagnostic, "SiemensErrorCode = 7001");
             }
+        }
+
+        /// <summary>Checks the installed API path type and reproduces its FileInfo shape without opening TIA.</summary>
+        private static void TestProjectPathIdentity() {
+            AppDomain.CurrentDomain.AssemblyResolve += ResolveTestOpennessAssembly;
+            var api = Assembly.Load("Siemens.Engineering.Base");
+            var projectType = api.GetType("Siemens.Engineering.Project", true);
+            AssertEqual(typeof(FileInfo), projectType.GetProperty("Path").PropertyType, "V21 path contract changed.");
+            var sessionType = typeof(ExportService).Assembly.GetType("EidoTiaWorkbench.Core.Openness.TiaSessionService", true);
+            var resolver = sessionType.GetMethod("ResolveProjectPath", BindingFlags.NonPublic | BindingFlags.Static);
+            var file = new FileInfo(Path.Combine(Path.GetTempPath(), "Eido identity", "Project.ap21"));
+            var project = new ProjectPathProbe { Path = file };
+            AssertEqual(file.FullName, resolver.Invoke(null, new object[] { project }) as string, "FileInfo identity lost.");
+            project.Path = file.FullName;
+            AssertEqual(file.FullName, resolver.Invoke(null, new object[] { project }) as string, "String path lost.");
+            project.Path = null;
+            project.ProjectFile = file;
+            AssertEqual(file.FullName, resolver.Invoke(null, new object[] { project }) as string, "Fallback path lost.");
+            project.ProjectFile = null;
+            AssertEqual<string>(null, resolver.Invoke(null, new object[] { project }) as string, "Unknown identity invented.");
+            AssertEqual<string>(null, resolver.Invoke(null, new object[] { null }) as string, "Null project has identity.");
         }
 
         /// <summary>
@@ -920,6 +942,19 @@ namespace EidoTiaWorkbench.Tests {
         private static void AssertContains(string text, string expectedFragment) {
             if (text == null || text.IndexOf(expectedFragment, StringComparison.OrdinalIgnoreCase) < 0) {
                 throw new InvalidOperationException("Expected fragment was not found. Fragment: " + expectedFragment + ". Text: " + text + ".");
+            }
+        }
+
+        /// <summary>Provides project path property shapes without constructing a Siemens project.</summary>
+        private sealed class ProjectPathProbe {
+            /// <summary>Gets or sets the API path value under test.</summary>
+            public object Path {
+                get; set;
+            }
+
+            /// <summary>Gets or sets a legacy fallback path.</summary>
+            public FileInfo ProjectFile {
+                get; set;
             }
         }
 

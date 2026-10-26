@@ -65,7 +65,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application\*.cs" />
-    <Compile Include="Controls\IntegrationSettingsControl.cs" /><Compile Include="Views\ValidationView.cs" />
+    <Compile Include="Controls\IntegrationSettingsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\ValidationView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Controls\ActivityLogControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -115,10 +120,16 @@
     <Compile Include="Controls\StatusBadge.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Controls\WorkbenchNavigationButton.cs" />
+    <Compile Include="Controls\WorkbenchNavigationButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Controls\RoundedDrawing.cs" />
-    <Compile Include="Controls\ThemedProgressBar.cs" />
-    <Compile Include="Controls\ThemedCheckBox.cs" />
+    <Compile Include="Controls\ThemedProgressBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\ThemedCheckBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Controls\ThemedButton.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -203,9 +214,17 @@
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <ItemGroup><ProjectReference Include="..\EidoTiaWorkbench.Worker\EidoTiaWorkbench.Worker.csproj"><Project>{88A32E40-5D87-45A9-8250-075B0FE0AD21}</Project><Name>EidoTiaWorkbench.Worker</Name><ReferenceOutputAssembly>false</ReferenceOutputAssembly></ProjectReference></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EidoTiaWorkbench.Worker\EidoTiaWorkbench.Worker.csproj">
+      <Project>{88A32E40-5D87-45A9-8250-075B0FE0AD21}</Project>
+      <Name>EidoTiaWorkbench.Worker</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Target Name="DeployOpennessWorker" AfterTargets="Build">
-    <ItemGroup><WorkerFiles Include="..\EidoTiaWorkbench.Worker\bin\x64\$(Configuration)\EidoTiaWorkbench.Worker.exe;..\EidoTiaWorkbench.Worker\bin\x64\$(Configuration)\EidoTiaWorkbench.Openness.V21.dll" /></ItemGroup>
+    <ItemGroup>
+      <WorkerFiles Include="..\EidoTiaWorkbench.Worker\bin\x64\$(Configuration)\EidoTiaWorkbench.Worker.exe;..\EidoTiaWorkbench.Worker\bin\x64\$(Configuration)\EidoTiaWorkbench.Openness.V21.dll" />
+    </ItemGroup>
     <Copy SourceFiles="@(WorkerFiles)" DestinationFolder="$(OutputPath)" />
   </Target>
 </Project>

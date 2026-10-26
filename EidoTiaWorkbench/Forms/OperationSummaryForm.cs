@@ -70,8 +70,14 @@ namespace EidoTiaWorkbench.Forms {
                 WrapContents = true,
                 Margin = new Padding(0, 0, 0, 12),
             };
-            AddBadge(counts, string.IsNullOrWhiteSpace(summary.Status) ? "Completed" : summary.Status, GetStatusColor(summary));
-            AddBadge(counts, (string.IsNullOrWhiteSpace(summary.SuccessLabel) ? "OK" : summary.SuccessLabel) + " " + summary.Ok, ThemeColors.Success);
+            AddBadge(
+                counts,
+                string.IsNullOrWhiteSpace(summary.Status) ? "Completed" : summary.Status,
+                GetStatusColor(summary));
+            AddBadge(
+                counts,
+                (string.IsNullOrWhiteSpace(summary.SuccessLabel) ? "OK" : summary.SuccessLabel) + " " + summary.Ok,
+                ThemeColors.Success);
             AddBadgeIfNonZero(counts, "Skipped", summary.Skipped, ThemeColors.Disabled);
             AddBadgeIfNonZero(counts, "Restricted", summary.Restricted, ThemeColors.Warning);
             AddBadgeIfNonZero(counts, "Unavailable", summary.Unavailable, ThemeColors.Disabled);
@@ -172,7 +178,11 @@ namespace EidoTiaWorkbench.Forms {
                 return ThemeColors.Error;
             }
 
-            if (summary?.Warnings > 0 || status.IndexOf("Review", System.StringComparison.OrdinalIgnoreCase) >= 0 || status.IndexOf("Issue", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            if (summary?.Warnings > 0 || status.IndexOf(
+                "Review",
+                System.StringComparison.OrdinalIgnoreCase) >= 0 || status.IndexOf(
+                    "Issue",
+                    System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 status.IndexOf("Warning", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 status.IndexOf("Cancelled", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 status.IndexOf("Preflight", System.StringComparison.OrdinalIgnoreCase) >= 0) {
@@ -206,8 +216,13 @@ namespace EidoTiaWorkbench.Forms {
             var lines = new List<string>();
             lines.Add("Overview");
             lines.Add("Status: " + (summary.Status ?? "-"));
-            lines.Add("Successful: " + summary.Ok + "; skipped: " + summary.Skipped + "; warnings: " + summary.Warnings + "; errors: " + summary.Errors + ".");
-            lines.Add("Restricted: " + summary.Restricted + "; unavailable: " + summary.Unavailable + "; unsupported: " + summary.Unsupported + "; aborted: " + summary.AbortedSessionLost + "; cancelled: " + summary.Cancelled + ".");
+            lines.Add(
+                "Successful: " + summary.Ok + "; skipped: " + summary.Skipped + "; warnings: " + summary.Warnings +
+                    "; errors: " + summary.Errors + ".");
+            lines.Add(
+                "Restricted: " + summary.Restricted + "; unavailable: " + summary.Unavailable + "; unsupported: " +
+                    summary.Unsupported + "; aborted: " + summary.AbortedSessionLost + "; cancelled: " +
+                    summary.Cancelled + ".");
 
             if (!string.IsNullOrWhiteSpace(summary.ConflictPolicy) || !string.IsNullOrWhiteSpace(summary.BackupPath)) {
                 lines.Add(string.Empty);

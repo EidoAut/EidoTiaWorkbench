@@ -18,7 +18,9 @@ namespace EidoTiaWorkbench.Controls {
 
         /// <summary>Initializes a new instance of the <see cref="ThemedCheckBox"/> class.</summary>
         public ThemedCheckBox() {
-            this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+            this.SetStyle(
+                ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw,
+                true);
             this.Font = ThemeFonts.Body;
             this.MinimumSize = new Size(0, 32);
         }
@@ -26,7 +28,9 @@ namespace EidoTiaWorkbench.Controls {
         /// <inheritdoc />
         public override Size GetPreferredSize(Size proposedSize) {
             var text = TextRenderer.MeasureText(this.Text, this.Font);
-            return new Size(text.Width + ThemeMetrics.Scale(this, 32), Math.Max(text.Height + 12, ThemeMetrics.Scale(this, 32)));
+            return new Size(
+                text.Width + ThemeMetrics.Scale(this, 32),
+                Math.Max(text.Height + 12, ThemeMetrics.Scale(this, 32)));
         }
 
         /// <inheritdoc />
@@ -55,11 +59,23 @@ namespace EidoTiaWorkbench.Controls {
             }
 
             if (this.CheckState != CheckState.Unchecked) {
-                TextRenderer.DrawText(e.Graphics, this.CheckState == CheckState.Indeterminate ? "−" : "✓", this.Font, box, ThemeColors.OnPrimary, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                TextRenderer.DrawText(
+                    e.Graphics,
+                    this.CheckState == CheckState.Indeterminate ? "−" : "✓",
+                    this.Font,
+                    box,
+                    ThemeColors.OnPrimary,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
             }
 
             var bounds = new Rectangle(side + 8, 0, Math.Max(0, this.Width - side - 8), this.Height);
-            TextRenderer.DrawText(e.Graphics, this.Text, this.Font, bounds, this.Enabled ? ThemeColors.TextPrimary : ThemeColors.Disabled, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+            TextRenderer.DrawText(
+                e.Graphics,
+                this.Text,
+                this.Font,
+                bounds,
+                this.Enabled ? ThemeColors.TextPrimary : ThemeColors.Disabled,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
             if (this.Focused && this.ShowFocusCues) {
                 ControlPaint.DrawFocusRectangle(e.Graphics, bounds, ThemeColors.TextPrimary, this.BackColor);
             }

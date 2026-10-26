@@ -16,20 +16,37 @@ using EidoTiaWorkbench.Theme;
 namespace EidoTiaWorkbench.Views {
     /// <summary>Edits working persisted preferences with a scrollable single-column layout.</summary>
     public sealed class SettingsView : UserControl {
-        private readonly PathSelectorControl _repository = new PathSelectorControl { Dock = DockStyle.Top, Margin = Padding.Empty };
+        private readonly PathSelectorControl _repository = new PathSelectorControl {
+            Dock = DockStyle.Top,
+            Margin = Padding.Empty,
+        };
+
         private readonly IntegrationSettingsControl _integration = new IntegrationSettingsControl();
         private readonly ComboBox _theme = new ThemedComboBox { Width = 220, Margin = Padding.Empty };
-        private readonly Label _diagnostics = new Label { AutoSize = true, Dock = DockStyle.Top, Margin = Padding.Empty };
+        private readonly Label _diagnostics = new Label {
+            AutoSize = true,
+            Dock = DockStyle.Top,
+            Margin = Padding.Empty,
+        };
+
         private bool _binding;
 
-        /// <summary>Initializes a new instance of the <see cref="SettingsView"/> class. Creates the persisted workspace, appearance and integration editors.</summary>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SettingsView"/> class. Creates the persisted workspace,
+        /// appearance and integration editors.
+        /// </summary>
         public SettingsView() {
             this.Dock = DockStyle.Fill;
             this.BackColor = ThemeColors.Background;
             this.ForeColor = ThemeColors.TextPrimary;
             this.Padding = new Padding(ThemeMetrics.Xl);
             var scroll = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
-            var stack = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(10) };
+            var stack = new TableLayoutPanel {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                ColumnCount = 1,
+                Padding = new Padding(10),
+            };
             stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             var header = new PageHeader { Margin = Padding.Empty };
             header.SetText("Settings", "Persisted workspace, appearance and engineering integration preferences.");
@@ -39,7 +56,12 @@ namespace EidoTiaWorkbench.Views {
 
             this._theme.DataSource = Enum.GetValues(typeof(ThemePreference));
             stack.Controls.Add(Section("Appearance", this._theme));
-            stack.Controls.Add(new Label { AutoSize = true, Text = "Import and export options are configured in their operation views.", Margin = new Padding(0, 14, 0, 14) });
+            stack.Controls.Add(
+                new Label {
+                    AutoSize = true,
+                    Text = "Import and export options are configured in their operation views.",
+                    Margin = new Padding(0, 14, 0, 14),
+                });
             stack.Controls.Add(Section("Diagnostics", this._diagnostics));
             scroll.Controls.Add(stack);
             this.Controls.Add(scroll);
@@ -53,7 +75,9 @@ namespace EidoTiaWorkbench.Views {
                     this.ThemePreferenceChanged?.Invoke(this, EventArgs.Empty);
                 }
             };
-            this.Resize += (s, e) => this._diagnostics.MaximumSize = new Size(Math.Max(100, this.ClientSize.Width - 80), 0);
+            this.Resize += (
+                s,
+                e) => this._diagnostics.MaximumSize = new Size(Math.Max(100, this.ClientSize.Width - 80), 0);
         }
 
         /// <summary>Occurs when the user changes the default workspace path.</summary>
@@ -86,7 +110,8 @@ namespace EidoTiaWorkbench.Views {
             try {
                 this.RepositoryPath = state.SelectedRepository;
                 this.ThemePreference = AppTheme.CurrentPreference;
-                this._diagnostics.Text = "Active: " + state.IntegrationVersion + "\r\nDesktop: .NET Framework 4.8 x64, Siemens-free Core.\r\n" +
+                this._diagnostics.Text = "Active: " + state.IntegrationVersion +
+                    "\r\nDesktop: .NET Framework 4.8 x64, Siemens-free Core.\r\n" +
                     "Engineering: isolated worker, single STA, cooperative cancellation.\r\nLog: " + logFilePath;
             }
             finally {
@@ -95,7 +120,15 @@ namespace EidoTiaWorkbench.Views {
         }
 
         private static Control Section(string title, Control content) {
-            var panel = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, BackColor = ThemeColors.Surface, Padding = new Padding(16), Margin = new Padding(0, 0, 0, 16) };
+            var panel = new TableLayoutPanel {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 1,
+                BackColor = ThemeColors.Surface,
+                Padding = new Padding(16),
+                Margin = new Padding(0, 0, 0, 16),
+            };
             panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             panel.Controls.Add(Heading(title));
             panel.Controls.Add(content);

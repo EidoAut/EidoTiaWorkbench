@@ -17,7 +17,9 @@ namespace EidoTiaWorkbench.Controls {
     /// Provides the shell sidebar navigation with main and bottom action groups.
     /// </summary>
     public sealed class SidebarNavigation : UserControl {
-        private readonly Dictionary<string, Button> _buttons = new Dictionary<string, Button>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Button> _buttons = new Dictionary<string, Button>(
+            StringComparer.OrdinalIgnoreCase);
+
         private readonly FlowLayoutPanel _top;
         private readonly FlowLayoutPanel _bottom;
         private string _activeKey;
@@ -115,7 +117,9 @@ namespace EidoTiaWorkbench.Controls {
         /// <param name="panel">Navigation group whose children need resizing.</param>
         private static void ResizeNavigationControls(FlowLayoutPanel panel) {
             foreach (Control child in panel.Controls) {
-                child.Width = Math.Max(100, panel.ClientSize.Width - child.Margin.Horizontal - SystemInformation.VerticalScrollBarWidth);
+                child.Width = Math.Max(
+                    100,
+                    panel.ClientSize.Width - child.Margin.Horizontal - SystemInformation.VerticalScrollBarWidth);
             }
         }
 

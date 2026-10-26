@@ -85,7 +85,10 @@ namespace EidoTiaWorkbench.Core.Export {
         /// Thrown when <paramref name="item"/>, <paramref name="descriptor"/>, or <paramref name="adapter"/>
         /// is <see langword="null"/>.
         /// </exception>
-        public static ArtifactExportPreflight Evaluate(ExportItem item, ArtifactDescriptor descriptor, IArtifactAdapter adapter) {
+        public static ArtifactExportPreflight Evaluate(
+            ExportItem item,
+            ArtifactDescriptor descriptor,
+            IArtifactAdapter adapter) {
             if (item == null) {
                 throw new ArgumentNullException(nameof(item));
             }
@@ -113,7 +116,8 @@ namespace EidoTiaWorkbench.Core.Export {
                 preflight.Condition = item.Kind == ExportKind.Unsupported
                     ? "item.Kind"
                     : "descriptor.Format";
-                preflight.Message = descriptor.DisplayName + " is unsupported by this export pipeline: " + preflight.Reason;
+                preflight.Message = descriptor.DisplayName + " is unsupported by this export pipeline: " +
+                    preflight.Reason;
                 return preflight;
             }
 
@@ -184,7 +188,10 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="descriptor">Catalog descriptor for the artifact kind.</param>
         /// <param name="adapter">Registered pipeline adapter for the artifact kind.</param>
         /// <returns>Single-line capability diagnostic text.</returns>
-        private static string BuildCapabilityDetail(ExportItem item, ArtifactDescriptor descriptor, IArtifactAdapter adapter) {
+        private static string BuildCapabilityDetail(
+            ExportItem item,
+            ArtifactDescriptor descriptor,
+            IArtifactAdapter adapter) {
             return "item.CanExport=" + item.CanExport +
                    "; descriptor.CanExport=" + descriptor.CanExport +
                    "; adapter.CanExport=" + adapter.CanExport +
@@ -217,7 +224,10 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="descriptor">Catalog descriptor for the artifact kind.</param>
         /// <param name="adapter">Registered pipeline adapter for the artifact kind.</param>
         /// <returns>Capability condition name, or an empty string when no condition failed.</returns>
-        private static string BuildUnavailableCondition(ExportItem item, ArtifactDescriptor descriptor, IArtifactAdapter adapter) {
+        private static string BuildUnavailableCondition(
+            ExportItem item,
+            ArtifactDescriptor descriptor,
+            IArtifactAdapter adapter) {
             if (!item.CanExport) {
                 return "item.CanExport";
             }

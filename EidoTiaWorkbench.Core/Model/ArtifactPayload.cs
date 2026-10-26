@@ -22,7 +22,11 @@ namespace EidoTiaWorkbench.Core.Model {
         /// <param name="files">All files that belong to the artifact.</param>
         /// <param name="format">Repository payload format.</param>
         /// <param name="contentHash">Aggregate content hash.</param>
-        public ArtifactPayload(string primaryPath, IEnumerable<string> files, ArtifactFormat format, string contentHash) {
+        public ArtifactPayload(
+            string primaryPath,
+            IEnumerable<string> files,
+            ArtifactFormat format,
+            string contentHash) {
             this.PrimaryPath = primaryPath ?? throw new ArgumentNullException(nameof(primaryPath));
             this.Files = (files ?? new[] { primaryPath }).ToList().AsReadOnly();
             this.Format = format;

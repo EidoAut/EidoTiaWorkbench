@@ -78,7 +78,9 @@ namespace EidoTiaWorkbench.Controls {
         /// Rebuilds the tree from a new artifact collection using an explicit default checked set.
         /// </summary>
         /// <param name="items">Artifacts to display.</param>
-        /// <param name="defaultCheckedKeys">Logical keys to check when the caller wants a fresh default selection.</param>
+        /// <param name="defaultCheckedKeys">
+        /// Logical keys to check when the caller wants a fresh default selection.
+        /// </param>
         public void SetItems(IEnumerable<ExportItem> items, IEnumerable<string> defaultCheckedKeys) {
             var checkedKeys = new HashSet<string>(
                 defaultCheckedKeys ?? this.GetCheckedItems().Select(i => i.LogicalKey),
@@ -439,7 +441,13 @@ namespace EidoTiaWorkbench.Controls {
             using (var pen = new Pen(ThemeColors.BorderStrong)) {
                 graphics.Clear(ThemeColors.InputSurface);
                 graphics.DrawRectangle(pen, 0, 2, 23, 19);
-                TextRenderer.DrawText(graphics, text, font, new Rectangle(0, 0, 24, 24), color, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                TextRenderer.DrawText(
+                    graphics,
+                    text,
+                    font,
+                    new Rectangle(0, 0, 24, 24),
+                    color,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
             }
 
             return bitmap;

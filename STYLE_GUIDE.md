@@ -27,6 +27,16 @@ The projects remain classic .NET Framework 4.8 MSBuild projects. They were not m
 
 The rules are compatible with C# 7.3.
 
+## Readability
+
+Follow the corporate guide's [line length and expression readability rules](docs/EIDO_CSharp_Programming_Style_Guide_v1.0.md#line-length-and-expression-readability):
+
+- Target 120 characters; wrap calls, initializers and logical expressions at meaningful boundaries.
+- Use descriptive locals for complex messages, conditions and rendering flags, preserving evaluation order.
+- Extract focused helpers for distinct callback responsibilities and document non-obvious lifecycle behavior.
+- Wrap XML documentation without merging parameter elements or breaking references.
+- Keep StyleCop's multiline argument and member-spacing rules enabled. Review readability manually after formatting.
+
 ## Naming
 
 - Types, methods, properties and events use PascalCase.

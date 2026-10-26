@@ -34,7 +34,9 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// Initializes a new instance of the <see cref="HmiInventoryService"/> class.
         /// </summary>
         /// <param name="session">TIA Portal session used to access the open project.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="session"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="session"/> is <see langword="null"/>.
+        /// </exception>
         public HmiInventoryService(TiaSessionService session) {
             this._session = session ?? throw new ArgumentNullException(nameof(session));
         }
@@ -60,18 +62,101 @@ namespace EidoTiaWorkbench.Core.Openness {
                     var targetPath = device.Name + "/" + target.DeviceItem.Name;
                     var targetType = BuildTargetType(device, target.DeviceItem, target.HmiTarget);
 
-                    CollectFolderArtifacts(target.HmiTarget.ScreenFolder, targetPath, string.Empty, targetType, ExportKind.HmiScreen, "Screens", "Folders", items);
-                    CollectFolderArtifacts(target.HmiTarget.ScreenTemplateFolder, targetPath, string.Empty, targetType, ExportKind.HmiTemplate, "ScreenTemplates", "Folders", items);
-                    CollectFolderArtifacts(target.HmiTarget.ScreenPopupFolder, targetPath, string.Empty, targetType, ExportKind.HmiPopup, "ScreenPopups", "Folders", items);
-                    CollectFlatArtifacts(target.HmiTarget.ScreenSlideinFolder, targetPath, string.Empty, targetType, ExportKind.HmiSlideIn, "ScreenSlideins", items);
-                    CollectFolderArtifacts(target.HmiTarget.TagFolder, targetPath, string.Empty, targetType, ExportKind.HmiTagTable, "TagTables", "Folders", items);
-                    CollectCompositionArtifacts(target.HmiTarget.Connections, targetPath, string.Empty, targetType, ExportKind.HmiConnection, items);
-                    CollectCompositionArtifacts(target.HmiTarget.TextLists, targetPath, string.Empty, targetType, ExportKind.HmiTextList, items);
-                    CollectCompositionArtifacts(target.HmiTarget.GraphicLists, targetPath, string.Empty, targetType, ExportKind.HmiGraphicList, items);
-                    CollectCompositionArtifacts(target.HmiTarget.Cycles, targetPath, string.Empty, targetType, ExportKind.HmiCycle, items);
-                    CollectFolderArtifacts(target.HmiTarget.VBScriptFolder, targetPath, string.Empty, targetType, ExportKind.HmiVBScript, "VBScripts", "Folders", items);
-                    CollectSingletonArtifact(target.HmiTarget.ScreenGlobalElements, targetPath, targetType, ExportKind.HmiGlobalElements, "Global elements", items);
-                    CollectSingletonArtifact(target.HmiTarget.ScreenOverview, targetPath, targetType, ExportKind.HmiScreenOverview, "Screen overview", items);
+                    CollectFolderArtifacts(
+                        target.HmiTarget.ScreenFolder,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiScreen,
+                        "Screens",
+                        "Folders",
+                        items);
+                    CollectFolderArtifacts(
+                        target.HmiTarget.ScreenTemplateFolder,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiTemplate,
+                        "ScreenTemplates",
+                        "Folders",
+                        items);
+                    CollectFolderArtifacts(
+                        target.HmiTarget.ScreenPopupFolder,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiPopup,
+                        "ScreenPopups",
+                        "Folders",
+                        items);
+                    CollectFlatArtifacts(
+                        target.HmiTarget.ScreenSlideinFolder,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiSlideIn,
+                        "ScreenSlideins",
+                        items);
+                    CollectFolderArtifacts(
+                        target.HmiTarget.TagFolder,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiTagTable,
+                        "TagTables",
+                        "Folders",
+                        items);
+                    CollectCompositionArtifacts(
+                        target.HmiTarget.Connections,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiConnection,
+                        items);
+                    CollectCompositionArtifacts(
+                        target.HmiTarget.TextLists,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiTextList,
+                        items);
+                    CollectCompositionArtifacts(
+                        target.HmiTarget.GraphicLists,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiGraphicList,
+                        items);
+                    CollectCompositionArtifacts(
+                        target.HmiTarget.Cycles,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiCycle,
+                        items);
+                    CollectFolderArtifacts(
+                        target.HmiTarget.VBScriptFolder,
+                        targetPath,
+                        string.Empty,
+                        targetType,
+                        ExportKind.HmiVBScript,
+                        "VBScripts",
+                        "Folders",
+                        items);
+                    CollectSingletonArtifact(
+                        target.HmiTarget.ScreenGlobalElements,
+                        targetPath,
+                        targetType,
+                        ExportKind.HmiGlobalElements,
+                        "Global elements",
+                        items);
+                    CollectSingletonArtifact(
+                        target.HmiTarget.ScreenOverview,
+                        targetPath,
+                        targetType,
+                        ExportKind.HmiScreenOverview,
+                        "Screen overview",
+                        items);
                 }
             }
 
@@ -150,7 +235,15 @@ namespace EidoTiaWorkbench.Core.Openness {
 
             foreach (var child in GetChildren(folder, folderProperty)) {
                 var childPath = CombineGroupPath(folderPath, GetName(child));
-                CollectFolderArtifacts(child, targetPath, childPath, targetType, kind, itemProperty, folderProperty, items);
+                CollectFolderArtifacts(
+                    child,
+                    targetPath,
+                    childPath,
+                    targetType,
+                    kind,
+                    itemProperty,
+                    folderProperty,
+                    items);
             }
         }
 
@@ -259,7 +352,9 @@ namespace EidoTiaWorkbench.Core.Openness {
             var unavailableReason = descriptor.Limitations;
             var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            if ((kind == ExportKind.HmiCycle || kind == ExportKind.HmiTagTable) && TryGetBooleanProperty(artifact, "IsSystemObject")) {
+            if ((kind == ExportKind.HmiCycle || kind == ExportKind.HmiTagTable) && TryGetBooleanProperty(
+                artifact,
+                "IsSystemObject")) {
                 canExport = false;
                 canImport = false;
                 unavailableReason = "System HMI artifacts are resolved as dependencies and are not exported as user artifacts.";

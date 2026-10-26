@@ -60,7 +60,9 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// <typeparam name="T">Type returned by the queued function.</typeparam>
         /// <param name="func">Function to execute on the STA thread.</param>
         /// <returns>A task that completes with the function result.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="func"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="func"/> is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="ObjectDisposedException">Thrown when the worker has been disposed.</exception>
         public Task<T> InvokeAsync<T>(Func<T> func) {
             if (func == null) {
@@ -97,9 +99,13 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// </remarks>
         /// <typeparam name="T">Type returned by the queued function.</typeparam>
         /// <param name="func">Function to execute on the STA thread.</param>
-        /// <param name="cancellationToken">Token that can cancel waiting or prevent queueing before execution starts.</param>
+        /// <param name="cancellationToken">
+        /// Token that can cancel waiting or prevent queueing before execution starts.
+        /// </param>
         /// <returns>A task that completes with the function result or cancellation.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="func"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="func"/> is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="ObjectDisposedException">Thrown when the worker has been disposed.</exception>
         public Task<T> InvokeAsync<T>(Func<T> func, CancellationToken cancellationToken) {
             if (func == null) {
@@ -138,7 +144,9 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// </summary>
         /// <param name="action">Action to execute on the STA thread.</param>
         /// <returns>A task that completes when the action has run.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="action"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="action"/> is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="ObjectDisposedException">Thrown when the worker has been disposed.</exception>
         public Task InvokeAsync(Action action) {
             if (action == null) {
@@ -153,8 +161,10 @@ namespace EidoTiaWorkbench.Core.Openness {
         }
 
         /// <summary>
-        /// Stops the worker and releases resources.
+        /// Stops accepting work, drains queued actions and releases the thread and queue.
         /// </summary>
+        /// <remarks>Blocks the owning thread until all accepted work has finished.</remarks>
+        /// <exception cref="InvalidOperationException">Disposal was requested from the STA thread itself.</exception>
         public void Dispose() {
             if (this._disposed) {
                 return;
@@ -171,7 +181,7 @@ namespace EidoTiaWorkbench.Core.Openness {
         }
 
         /// <summary>
-        /// Main worker loop: executes queued actions until completion or cancellation.
+        /// Executes accepted actions in FIFO order until the queue is completed and drained.
         /// </summary>
         private void Run() {
             foreach (var action in this._queue.GetConsumingEnumerable()) {

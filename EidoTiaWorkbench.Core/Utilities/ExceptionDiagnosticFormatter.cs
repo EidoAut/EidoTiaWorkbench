@@ -34,7 +34,9 @@ namespace EidoTiaWorkbench.Core.Utilities {
         /// Formats an exception and every inner exception recursively for durable logs.
         /// </summary>
         /// <param name="exception">Exception to format.</param>
-        /// <returns>Diagnostic text containing type, message, HRESULT, source, target, stack, data, and ToString output.</returns>
+        /// <returns>
+        /// Diagnostic text containing type, message, HRESULT, source, target, stack, data, and ToString output.
+        /// </returns>
         public static string Format(Exception exception) {
             if (exception == null) {
                 return string.Empty;

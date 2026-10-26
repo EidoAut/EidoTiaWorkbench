@@ -37,6 +37,9 @@ namespace EidoTiaWorkbench.Theme {
         /// <param name="control">Control whose monitor DPI applies.</param>
         /// <param name="value">Logical dimension at 96 DPI.</param>
         /// <returns>The rounded device dimension.</returns>
-        public static int Scale(Control control, int value) => (int)Math.Round(value * Math.Max(control.DeviceDpi / 96.0, control.Font.Size / ThemeFonts.Body.Size));
+        public static int Scale(
+            Control control,
+            int value) => (int)Math.Round(
+                value * Math.Max(control.DeviceDpi / 96.0, control.Font.Size / ThemeFonts.Body.Size));
     }
 }

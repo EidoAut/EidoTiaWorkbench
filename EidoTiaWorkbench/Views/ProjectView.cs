@@ -59,9 +59,19 @@ namespace EidoTiaWorkbench.Views {
             this._warning = new WarningBanner();
 
             var toolbar = new OperationToolbar();
-            AddButton(toolbar, "Refresh instances", (s, e) => this.RefreshInstancesRequested?.Invoke(this, EventArgs.Empty));
-            AddButton(toolbar, "Attach selected", (s, e) => this.AttachSelectedRequested?.Invoke(this, EventArgs.Empty), true);
-            AddButton(toolbar, "Start new instance", (s, e) => this.StartPortalRequested?.Invoke(this, EventArgs.Empty));
+            AddButton(
+                toolbar,
+                "Refresh instances",
+                (s, e) => this.RefreshInstancesRequested?.Invoke(this, EventArgs.Empty));
+            AddButton(
+                toolbar,
+                "Attach selected",
+                (s, e) => this.AttachSelectedRequested?.Invoke(this, EventArgs.Empty),
+                true);
+            AddButton(
+                toolbar,
+                "Start new instance",
+                (s, e) => this.StartPortalRequested?.Invoke(this, EventArgs.Empty));
             AddButton(toolbar, "Disconnect", (s, e) => this.DisconnectRequested?.Invoke(this, EventArgs.Empty));
             this._startWithUi = new ThemedCheckBox {
                 Text = "Start TIA with UI",
@@ -93,9 +103,22 @@ namespace EidoTiaWorkbench.Views {
                     200,
                     this._instances.ClientSize.Width - this._instances.Columns[0].Width);
 
-            var sessions = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(16), BackColor = ThemeColors.Surface, Margin = new Padding(0, 12, 0, 16) };
+            var sessions = new TableLayoutPanel {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                ColumnCount = 1,
+                Padding = new Padding(16),
+                BackColor = ThemeColors.Surface,
+                Margin = new Padding(0, 12, 0, 16),
+            };
             sessions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            sessions.Controls.Add(new Label { Text = "Available sessions", Font = ThemeFonts.SectionTitle, AutoSize = true, Margin = new Padding(0, 0, 0, 12) });
+            sessions.Controls.Add(
+                new Label {
+                    Text = "Available sessions",
+                    Font = ThemeFonts.SectionTitle,
+                    AutoSize = true,
+                    Margin = new Padding(0, 0, 0, 12),
+                });
             this._emptySessions = new Label {
                 Text = "No TIA Portal sessions found.\r\nRefresh the list, or start a new instance using the controls above.",
                 Dock = DockStyle.Top,
@@ -135,7 +158,9 @@ namespace EidoTiaWorkbench.Views {
                 Margin = new Padding(0, 7, 10, 0),
             };
             AppTheme.StyleInput(this._projectPath);
-            this._projectPath.TextChanged += (s, e) => this._toolTip.SetToolTip(this._projectPath, this._projectPath.Text);
+            this._projectPath.TextChanged += (
+                s,
+                e) => this._toolTip.SetToolTip(this._projectPath, this._projectPath.Text);
             var browseButton = new SecondaryButton {
                 Text = "Browse",
                 Anchor = AnchorStyles.None,
@@ -235,9 +260,12 @@ namespace EidoTiaWorkbench.Views {
                 this._projectInfo.SetContent("Project", "No project adopted or opened");
             }
             else {
+                var projectDetails = project.Name + "  ·  " + state.IntegrationVersion +
+                    "  ·  PLC: " + project.PlcTargets.Count + "  ·  HMI: " + project.HmiTargets.Count +
+                    "\r\n" + project.Path;
                 this._projectInfo.SetContent(
                     "Project",
-                    project.Name + "  ·  " + state.IntegrationVersion + "  ·  PLC: " + project.PlcTargets.Count + "  ·  HMI: " + project.HmiTargets.Count + "\r\n" + project.Path,
+                    projectDetails,
                     state.PortalOwnership.ToString(),
                     state.PortalOwnership == PortalOwnership.Owned ? ThemeColors.Info : ThemeColors.Success);
                 if (string.IsNullOrWhiteSpace(this._projectPath.Text)) {

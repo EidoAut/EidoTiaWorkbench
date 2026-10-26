@@ -121,7 +121,9 @@ namespace EidoTiaWorkbench.Views {
             right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             right.Dock = DockStyle.Top;
             body.Panel2.AutoScroll = true;
-            body.Panel2.SizeChanged += (sender, e) => right.Height = Math.Max(body.Panel2.ClientSize.Height, ThemeMetrics.Scale(right, 320));
+            body.Panel2.SizeChanged += (
+                sender,
+                e) => right.Height = Math.Max(body.Panel2.ClientSize.Height, ThemeMetrics.Scale(right, 320));
             right.Height = 320;
             right.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             right.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
@@ -139,9 +141,16 @@ namespace EidoTiaWorkbench.Views {
             AppTheme.StyleGrid(this._comparison);
 
             // The first comparison columns are fixed for scanability; the path column fills remaining space.
-            this._comparison.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Artifact", DataPropertyName = "Artifact", Width = 180 });
-            this._comparison.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "State", DataPropertyName = "State", Width = 120 });
-            this._comparison.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Workspace path", DataPropertyName = "Path", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            this._comparison.Columns.Add(
+                new DataGridViewTextBoxColumn { HeaderText = "Artifact", DataPropertyName = "Artifact", Width = 180 });
+            this._comparison.Columns.Add(
+                new DataGridViewTextBoxColumn { HeaderText = "State", DataPropertyName = "State", Width = 120 });
+            this._comparison.Columns.Add(
+                new DataGridViewTextBoxColumn {
+                    HeaderText = "Workspace path",
+                    DataPropertyName = "Path",
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                });
 
             this._conflicts = new TextBox {
                 Dock = DockStyle.Fill,
@@ -159,9 +168,25 @@ namespace EidoTiaWorkbench.Views {
                 TextAlign = ContentAlignment.MiddleLeft,
             };
 
-            right.Controls.Add(new Label { Text = "Workspace comparison", AutoSize = true, Font = ThemeFonts.SectionTitle, Margin = new Padding(0, 0, 0, 12) }, 0, 0);
+            right.Controls.Add(
+                new Label {
+                    Text = "Workspace comparison",
+                    AutoSize = true,
+                    Font = ThemeFonts.SectionTitle,
+                    Margin = new Padding(0, 0, 0, 12),
+                },
+                0,
+                0);
             right.Controls.Add(this._comparison, 0, 1);
-            right.Controls.Add(new Label { Text = "Prevalidation & conflicts", AutoSize = true, Font = ThemeFonts.SectionTitle, Margin = new Padding(0, 12, 0, 8) }, 0, 2);
+            right.Controls.Add(
+                new Label {
+                    Text = "Prevalidation & conflicts",
+                    AutoSize = true,
+                    Font = ThemeFonts.SectionTitle,
+                    Margin = new Padding(0, 12, 0, 8),
+                },
+                0,
+                2);
             right.Controls.Add(this._conflicts, 0, 3);
             right.Controls.Add(this._summary, 0, 4);
             body.Panel2.Controls.Add(right);
@@ -203,7 +228,9 @@ namespace EidoTiaWorkbench.Views {
                     this.ImportSelectedRequested?.Invoke(this, EventArgs.Empty);
                 }
             };
-            this._dryRun.CheckedChanged += (s, e) => import.Text = this._dryRun.Checked ? "Preview selected" : "REAL IMPORT";
+            this._dryRun.CheckedChanged += (
+                s,
+                e) => import.Text = this._dryRun.Checked ? "Preview selected" : "REAL IMPORT";
             import.Text = "Preview selected";
             dryRun.Click += (s, e) => this.DryRunRequested?.Invoke(this, EventArgs.Empty);
             bottom.Controls.Add(import);
@@ -280,7 +307,9 @@ namespace EidoTiaWorkbench.Views {
         /// </summary>
         public List<RepositoryArtifact> SelectedArtifacts {
             get {
-                var keys = new HashSet<string>(this._tree.GetCheckedItems().Select(i => i.LogicalKey), StringComparer.OrdinalIgnoreCase);
+                var keys = new HashSet<string>(
+                    this._tree.GetCheckedItems().Select(i => i.LogicalKey),
+                    StringComparer.OrdinalIgnoreCase);
                 return this._artifacts.Where(a => keys.Contains(a.Item.LogicalKey)).ToList();
             }
         }
@@ -316,10 +345,12 @@ namespace EidoTiaWorkbench.Views {
             this._tree.SetItems(this._artifacts.Select(a => a.Item), defaultKeys);
             this._comparison.DataSource = this._artifacts.Select(a => new ImportRow(a)).ToList();
 
-            var invalid = this._artifacts.Count(a => a.State == RepositoryArtifactState.InvalidXml || a.State == RepositoryArtifactState.Unsupported);
+            var invalid = this._artifacts.Count(
+                a => a.State == RepositoryArtifactState.InvalidXml || a.State == RepositoryArtifactState.Unsupported);
             this._manifestStatus.Text = this._artifacts.Count == 0
                 ? "No workspace inventory loaded"
-                : "Manifest/workspace validation loaded " + this._artifacts.Count + " artifact(s), " + invalid + " invalid or unsupported.";
+                : "Manifest/workspace validation loaded " + this._artifacts.Count + " artifact(s), " + invalid +
+                    " invalid or unsupported.";
 
             var conflictText = this._artifacts
                 .Where(a => !string.IsNullOrWhiteSpace(a.Warning))
@@ -382,7 +413,8 @@ namespace EidoTiaWorkbench.Views {
         /// Refreshes the selected/workspace artifact count label.
         /// </summary>
         private void UpdateSummary() {
-            this._summary.Text = this.SelectedArtifacts.Count + " selected / " + this._artifacts.Count + " workspace artifacts";
+            this._summary.Text = this.SelectedArtifacts.Count + " selected / " + this._artifacts.Count +
+                " workspace artifacts";
         }
 
         /// <summary>

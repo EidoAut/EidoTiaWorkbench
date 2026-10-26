@@ -38,7 +38,10 @@ namespace EidoTiaWorkbench.Core.Export {
         /// <param name="healthAfterFailure">Session health observed or recovered after the exception.</param>
         /// <param name="item">Artifact being exported, when available.</param>
         /// <returns>A classification used to produce artifact result, manifest, and report entries.</returns>
-        public static ExportFailureClassification Classify(Exception exception, TiaSessionHealth healthAfterFailure, ExportItem item) {
+        public static ExportFailureClassification Classify(
+            Exception exception,
+            TiaSessionHealth healthAfterFailure,
+            ExportItem item) {
             if (exception != null && IsRestrictedExport(exception)) {
                 return new ExportFailureClassification {
                     Status = ArtifactExportStatus.Restricted,

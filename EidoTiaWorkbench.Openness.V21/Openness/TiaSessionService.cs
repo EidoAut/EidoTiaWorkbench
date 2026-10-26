@@ -220,7 +220,9 @@ namespace EidoTiaWorkbench.Core.Openness {
                 var processes = TiaPortal.GetProcesses();
                 var selected = processes.FirstOrDefault(process => process.Id == instanceIndex);
                 if (selected == null) {
-                    throw new ArgumentOutOfRangeException(nameof(instanceIndex), "Selected TIA Portal instance is no longer available.");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(instanceIndex),
+                        "Selected TIA Portal instance is no longer available.");
                 }
 
                 using (var operatingSystemProcess = System.Diagnostics.Process.GetProcessById(selected.Id)) {
@@ -581,20 +583,27 @@ namespace EidoTiaWorkbench.Core.Openness {
         /// </summary>
         /// <param name="project">Project whose path should be resolved.</param>
         /// <returns>The project path when available; otherwise <see langword="null"/>.</returns>
-        private static string ResolveProjectPath(Project project) {
+        private static string ResolveProjectPath(object project) {
             if (project == null) {
                 return null;
             }
 
-            var direct = GetObjectString(project, "Path") ??
-                         GetObjectString(project, "ProjectPath") ??
-                         GetObjectString(project, "ProjectFile");
-            if (!string.IsNullOrWhiteSpace(direct)) {
-                return direct;
+            foreach (var propertyName in new[] { "Path", "ProjectPath", "ProjectFile" }) {
+                var value = GetObjectValue(project, propertyName);
+
+                // V21 exposes Project.Path as FileInfo, not string.
+                var file = value as FileInfo;
+                if (file != null) {
+                    return file.FullName;
+                }
+
+                var text = value as string;
+                if (!string.IsNullOrWhiteSpace(text)) {
+                    return Path.GetFullPath(text);
+                }
             }
 
-            var fileInfo = GetObjectValue(project, "ProjectFile") as FileInfo;
-            return fileInfo != null ? fileInfo.FullName : null;
+            return null;
         }
 
         /// <summary>
@@ -699,7 +708,11 @@ namespace EidoTiaWorkbench.Core.Openness {
 
             if (!string.IsNullOrWhiteSpace(expectedProjectPath)) {
                 var byPath = projects
-                    .Where(p => string.Equals(ResolveProjectPath(p), expectedProjectPath, StringComparison.OrdinalIgnoreCase))
+                    .Where(
+                        p => string.Equals(
+                            ResolveProjectPath(p),
+                            expectedProjectPath,
+                            StringComparison.OrdinalIgnoreCase))
                     .ToList();
                 if (byPath.Count == 1) {
                     return byPath[0];
