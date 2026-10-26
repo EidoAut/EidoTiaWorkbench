@@ -2,14 +2,23 @@
 
 Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
-Eido TIA Workbench is a Windows desktop application for inspecting, exporting,
-validating and importing **PLC and classic HMI engineering artifacts** from
-**Siemens TIA Portal V21**.
+**Make your PLC project accessible to your favorite AI assistant.**
 
-It turns selected engineering objects into an organized folder of files that can
-be reviewed, compared and versioned with tools such as Git. It also provides a
-controlled path back into TIA Portal through repository validation, import
-preview, explicit conflict policies and per-artifact diagnostics.
+Eido TIA Workbench exports supported PLC and classic HMI objects from **Siemens
+TIA Portal V21** into structured files that you can give to an AI assistant as
+engineering context. The goal is to help you understand existing logic, develop
+and review changes, document the program, and investigate machine faults with the
+actual project as a reference.
+
+Instead of describing every block by hand or relying only on screenshots, you can
+share the relevant exported blocks, data types, tags and HMI objects. These files
+provide material for an assistant to inspect and reason about; the quality of its
+analysis still depends on the exported format, available dependencies and context.
+
+The Windows application prepares and manages that engineering workspace. It does
+not contain an AI model or automatically send your project to an AI service. You
+choose the assistant and which files to share. Git-based reviews, offline
+validation and controlled imports support this central workflow.
 
 An **artifact** is an individual engineering object, such as a function block,
 data type, tag table or HMI screen. A **workspace** or **repository** is the local
@@ -32,6 +41,8 @@ operation, not a completed or error-free run.*
 
 | Task | What the application provides |
 | --- | --- |
+| Give an AI assistant project context | Export supported engineering objects as files that can be attached to a conversation or opened in an assistant-enabled workspace. |
+| Support programming and troubleshooting | Provide the logic, types and tags needed to discuss behavior, propose changes and investigate fault hypotheses with your chosen assistant. |
 | Inspect a project | Scan its PLC and classic HMI objects, browse the inventory by target and kind, and select the items to process. |
 | Export engineering files | Write selected artifacts into a predictable directory structure, with optional PLC XML normalization and preserved HMI screen XML. |
 | Maintain a versioned workspace | Reuse an incremental export destination, skip verified unchanged payloads and review file changes with your own Git or diff tools. |
@@ -39,15 +50,77 @@ operation, not a completed or error-free run.*
 | Prepare an import | Load repository artifacts, inspect local changes, preview actions and choose how existing target objects should be handled. |
 | Diagnose a run | Follow the current artifact and counter, open Activity during processing and inspect per-artifact errors and the final operation report. |
 
-Typical uses include reviewing changes between engineering iterations, keeping
-selected source artifacts alongside a software repository, and preparing a
-controlled transfer of supported objects into an open TIA project.
+Typical uses include understanding an unfamiliar PLC program with AI assistance,
+tracing the conditions that prevent a sequence from advancing, preparing a change
+to a function block, and generating documentation from the exported logic. The
+same workspace can be reviewed with diff tools and versioned with Git.
 
 An artifact export is **not a complete TIA project archive**. It does not promise
 to reconstruct all hardware configuration, protected content or unsupported
 objects. Keep the original project and use TIA's project-archive facilities when
 you need a complete project backup. The tool also does not automatically commit,
 push or synchronize files with GitHub.
+
+## Working with your favorite AI
+
+### From a TIA project to useful context
+
+1. **Export the relevant scope.** Include the blocks involved in the task and their
+   supporting types and tag tables. Add HMI objects when operator commands,
+   indications or alarms are relevant. Check the export report for missing,
+   restricted or failed objects.
+2. **Open or share the exported files.** Use an assistant that can read files or
+   access a local workspace. For a large project, start with the subsystem you are
+   investigating and expand the context as needed.
+3. **Describe the task and expected behavior.** Explain what the machine should
+   do, what it actually does, and which blocks or signals you suspect. Ask the
+   assistant to identify the files and logic supporting its conclusions and to
+   distinguish observations from assumptions.
+4. **Review the proposed explanation or change.** Use the assistant's output to
+   guide your engineering work. If it produces an importable artifact, validate
+   and preview it before an explicit import. Otherwise, implement the reviewed
+   change in TIA Portal. Compile and test changes in the intended environment.
+
+The export keeps the formats provided by the supported Openness operations,
+including structured XML. It does **not** translate every PLC language into SCL
+or guarantee that every model can interpret every Siemens XML construct.
+
+### Example tasks
+
+**Understand an existing sequence**
+
+> Using these exported blocks, types and tags, explain how the automatic cycle
+> starts and advances. Identify the relevant states, transitions and interlocks.
+> Cite the files and symbols you use, and list any missing dependencies.
+
+**Investigate a machine fault**
+
+> The conveyor does not start after the operator requests automatic mode. Here
+> are the relevant exported blocks, the alarm message and the signal values
+> observed at the time. Trace the conditions required for the start command,
+> identify which observations support each hypothesis, and suggest what to check
+> next. Do not assume a signal value that I have not supplied.
+
+**Prepare a programming change**
+
+> Review this function block and its interface. Propose a timeout diagnostic for
+> this sequence step, following the existing naming and programming conventions.
+> Explain the affected states, interface changes and tests needed to verify the
+> behavior. Keep the existing interlocks intact.
+
+### What the export can tell you about a fault
+
+Exported engineering files describe program structure and logic. They are not a
+live recording of the machine: the tool does not collect online PLC traces,
+physical measurements or a synchronized snapshot of process values for an AI.
+For troubleshooting, add the observed symptoms, alarm text, relevant online
+values, timing and operating conditions. Values present in exported engineering
+files should not be treated as proof of the machine's state at the fault time.
+
+An assistant can use this combined context to explain conditions and propose
+checks. An export alone cannot establish that a sensor, actuator or physical
+process caused a particular failure. The Activity log shown in this application
+records Workbench operations, not the machine's runtime alarm history.
 
 ## How it works
 
@@ -61,13 +134,14 @@ Scan and select artifacts
 Export through Openness --> Files + manifest + operation report
                                       |
                                       v
-                           Review / diff / version with Git
+                           Your AI assistant + task context
                                       |
                                       v
-                           Validate and preview an import
+                           Review explanation or proposed changes
                                       |
                                       v
-                           Explicit import into open TIA project
+                           Validate / preview / explicitly import
+                           or implement changes in TIA Portal
 ```
 
 The scan identifies objects and builds the selectable inventory. Export then
