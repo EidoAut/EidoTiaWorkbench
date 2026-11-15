@@ -1,4 +1,17 @@
-# Eido TIA Workbench
+<!-- EIDO repository presentation. Existing engineering documentation is retained below. -->
+<p align="center"><img src="docs/assets/eido-project-banner.svg" alt="EIDO TIA Workbench — EIDO Automation" width="100%"></p>
+
+# EIDO TIA Workbench
+
+**Versionable engineering workflows for TIA Portal**
+
+A Windows engineering companion for inspecting, exporting, validating and importing selected Siemens PLC and HMI artifacts.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-5bbc85.svg)](LICENSE)
+
+**Maintained by [EIDO Automation](https://github.com/EidoAut).** Released under the [MIT license](LICENSE). Review the documentation below for supported configurations, security boundaries and known limitations.
+
+## Project documentation
 
 Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
 
