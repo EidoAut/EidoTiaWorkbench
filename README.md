@@ -5,7 +5,7 @@
 
 **Versionable engineering workflows for TIA Portal**
 
-A Windows engineering companion for inspecting, exporting, validating and importing selected Siemens PLC and HMI artifacts.
+<p align="justify">A Windows engineering companion for inspecting, exporting, validating and importing selected Siemens PLC and HMI artifacts.</p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-5bbc85.svg)](LICENSE)
 
@@ -13,7 +13,7 @@ A Windows engineering companion for inspecting, exporting, validating and import
 
 ## Project documentation
 
-Copyright (c) 2026 EIDO AUTOMATION, S.L.U.
+<p align="justify">Copyright (c) 2026 EIDO AUTOMATION, S.L.U.</p>
 
 **Make your PLC project accessible to your favorite AI assistant.**
 
@@ -23,15 +23,9 @@ engineering context. The goal is to help you understand existing logic, develop
 and review changes, document the program, and investigate machine faults with the
 actual project as a reference.
 
-Instead of describing every block by hand or relying only on screenshots, you can
-share the relevant exported blocks, data types, tags and HMI objects. These files
-provide material for an assistant to inspect and reason about; the quality of its
-analysis still depends on the exported format, available dependencies and context.
+<p align="justify">Instead of describing every block by hand or relying only on screenshots, you can share the relevant exported blocks, data types, tags and HMI objects. These files provide material for an assistant to inspect and reason about; the quality of its analysis still depends on the exported format, available dependencies and context.</p>
 
-The Windows application prepares and manages that engineering workspace. It does
-not contain an AI model or automatically send your project to an AI service. You
-choose the assistant and which files to share. Git-based reviews, offline
-validation and controlled imports support this central workflow.
+<p align="justify">The Windows application prepares and manages that engineering workspace. It does not contain an AI model or automatically send your project to an AI service. You choose the assistant and which files to share. Git-based reviews, offline validation and controlled imports support this central workflow.</p>
 
 An **artifact** is an individual engineering object, such as a function block,
 data type, tag table or HMI screen. A **workspace** or **repository** is the local
@@ -63,10 +57,7 @@ operation, not a completed or error-free run.*
 | Prepare an import | Load repository artifacts, inspect local changes, preview actions and choose how existing target objects should be handled. |
 | Diagnose a run | Follow the current artifact and counter, open Activity during processing and inspect per-artifact errors and the final operation report. |
 
-Typical uses include understanding an unfamiliar PLC program with AI assistance,
-tracing the conditions that prevent a sequence from advancing, preparing a change
-to a function block, and generating documentation from the exported logic. The
-same workspace can be reviewed with diff tools and versioned with Git.
+<p align="justify">Typical uses include understanding an unfamiliar PLC program with AI assistance, tracing the conditions that prevent a sequence from advancing, preparing a change to a function block, and generating documentation from the exported logic. The same workspace can be reviewed with diff tools and versioned with Git.</p>
 
 An artifact export is **not a complete TIA project archive**. It does not promise
 to reconstruct all hardware configuration, protected content or unsupported
@@ -123,17 +114,9 @@ or guarantee that every model can interpret every Siemens XML construct.
 
 ### What the export can tell you about a fault
 
-Exported engineering files describe program structure and logic. They are not a
-live recording of the machine: the tool does not collect online PLC traces,
-physical measurements or a synchronized snapshot of process values for an AI.
-For troubleshooting, add the observed symptoms, alarm text, relevant online
-values, timing and operating conditions. Values present in exported engineering
-files should not be treated as proof of the machine's state at the fault time.
+<p align="justify">Exported engineering files describe program structure and logic. They are not a live recording of the machine: the tool does not collect online PLC traces, physical measurements or a synchronized snapshot of process values for an AI. For troubleshooting, add the observed symptoms, alarm text, relevant online values, timing and operating conditions. Values present in exported engineering files should not be treated as proof of the machine's state at the fault time.</p>
 
-An assistant can use this combined context to explain conditions and propose
-checks. An export alone cannot establish that a sensor, actuator or physical
-process caused a particular failure. The Activity log shown in this application
-records Workbench operations, not the machine's runtime alarm history.
+<p align="justify">An assistant can use this combined context to explain conditions and propose checks. An export alone cannot establish that a sensor, actuator or physical process caused a particular failure. The Activity log shown in this application records Workbench operations, not the machine's runtime alarm history.</p>
 
 ## How it works
 
@@ -157,10 +140,7 @@ Export through Openness --> Files + manifest + operation report
  or implement changes in TIA Portal
 ```
 
-The scan identifies objects and builds the selectable inventory. Export then
-resolves the selected objects in the connected project, calls the matching
-Openness export operation and records the result for each item. A protected or
-unavailable item can therefore appear in the inventory without producing a file.
+<p align="justify">The scan identifies objects and builds the selectable inventory. Export then resolves the selected objects in the connected project, calls the matching Openness export operation and records the result for each item. A protected or unavailable item can therefore appear in the inventory without producing a file.</p>
 
 The manifest records artifact identity, payload paths, hashes and outcomes. During
 an incremental export, the application compares the newly exported content with
@@ -168,16 +148,9 @@ the recorded hash and verifies the existing payload before deciding to skip a
 write. **Incremental means fewer file writes; it does not eliminate the Openness
 calls needed to obtain the current content.**
 
-Import travels in the other direction: repository files are inventoried and
-validated, dependencies are ordered, and the chosen conflict policy is applied
-before supported objects are imported through Openness. A successful local
-validation cannot guarantee that Siemens will accept a particular payload.
+<p align="justify">Import travels in the other direction: repository files are inventoried and validated, dependencies are ordered, and the chosen conflict policy is applied before supported objects are imported through Openness. A successful local validation cannot guarantee that Siemens will accept a particular payload.</p>
 
-Under the hood, the WinForms interface and Core handle navigation, files,
-validation and reporting. A separate worker process loads the V21 adapter and
-executes Siemens calls on a single STA thread. Commands are serialized while
-progress and diagnostics return to the interface. This separation lets local
-features work without Openness and keeps engineering calls out of the UI thread.
+<p align="justify">Under the hood, the WinForms interface and Core handle navigation, files, validation and reporting. A separate worker process loads the V21 adapter and executes Siemens calls on a single STA thread. Commands are serialized while progress and diagnostics return to the interface. This separation lets local features work without Openness and keeps engineering calls out of the UI thread.</p>
 
 ## Find your way around
 
@@ -205,9 +178,7 @@ features work without Openness and keeps engineering calls out of the UI thread.
 4. Select the artifacts you want to export. Scanning reads the inventory; it does
  not export files or import changes into the project.
 
-A scan belongs to the project from which it was obtained. If you switch or lose
-that project, scan again before exporting. Runtime discovery alone does not prove
-that the Windows account has the required Openness access.
+<p align="justify">A scan belongs to the project from which it was obtained. If you switch or lose that project, scan again before exporting. Runtime discovery alone does not prove that the Windows account has the required Openness access.</p>
 
 ### 2. Export a selection
 
@@ -227,11 +198,7 @@ with a timestamp and unique suffix. Select the generated repository root—the
 folder containing `PLC`, `HMI` and/or `meta`—when loading that export for validation
 or import.
 
-For example, after exporting a PLC function block, you can review its XML in a
-diff tool and commit the workspace using your normal Git workflow. On the next
-incremental run, unchanged verified payloads remain in place. If the principal
-payload was edited locally, the tool reports the discrepancy instead of silently
-overwriting that edit.
+<p align="justify">For example, after exporting a PLC function block, you can review its XML in a diff tool and commit the workspace using your normal Git workflow. On the next incremental run, unchanged verified payloads remain in place. If the principal payload was edited locally, the tool reports the discrepancy instead of silently overwriting that edit.</p>
 
 ### 3. Validate and preview
 
@@ -246,8 +213,7 @@ proceeding to a real import.
 
 ### 4. Import deliberately
 
-Connect to the intended target project and review the selected files. Existing
-objects require an explicit conflict policy:
+<p align="justify">Connect to the intended target project and review the selected files. Existing objects require an explicit conflict policy:</p>
 
 | Policy | Existing target object |
 | --- | --- |
@@ -262,21 +228,13 @@ summary and Activity details rather than assuming every selected object succeede
 
 ### 5. Follow progress and inspect results
 
-Long-running commands share one operation state model. The progress panel shows
-the current phase, artifact and completed-item count, with indeterminate progress
-when the total is unknown. Navigation, Activity filters, log copying and opening
-the log remain available. Incompatible engineering commands stay disabled until
-the current operation ends. The redundant status-bar progress indicator has been
-removed.
+<p align="justify">Long-running commands share one operation state model. The progress panel shows the current phase, artifact and completed-item count, with indeterminate progress when the total is unknown. Navigation, Activity filters, log copying and opening the log remain available. Incompatible engineering commands stay disabled until the current operation ends. The redundant status-bar progress indicator has been removed.</p>
 
-Import always runs a local preflight before calling Siemens Openness. Preflight checks repository state, manifest consistency, XML well-formedness, duplicate IDs, common missing ID/reference problems, unsupported artifacts, and dependency-plan issues. Dry run is non-destructive and intentionally reports simulated actions only; it does not claim Siemens XML import compatibility until a real import calls Openness.
+<p align="justify">Import always runs a local preflight before calling Siemens Openness. Preflight checks repository state, manifest consistency, XML well-formedness, duplicate IDs, common missing ID/reference problems, unsupported artifacts, and dependency-plan issues. Dry run is non-destructive and intentionally reports simulated actions only; it does not claim Siemens XML import compatibility until a real import calls Openness.</p>
 
 Import selection defaults to `New`, `Modified`, and `Conflict` repository artifacts. `Identical` artifacts are left unchecked.
 
-Cancellation is cooperative: it prevents new artifact work between items and
-waits for the active Siemens call to finish. The interface remains available for
-inspection while cancellation is pending; another engineering operation cannot
-start until cleanup completes.
+<p align="justify">Cancellation is cooperative: it prevents new artifact work between items and waits for the active Siemens call to finish. The interface remains available for inspection while cancellation is pending; another engineering operation cannot start until cleanup completes.</p>
 
 Exports written by the tool include `meta/tia.txt`, `meta/manifest.json`, and `meta/operation-report.txt`.
 
@@ -288,11 +246,7 @@ If a TIA Portal project/session appears lost during export, the exporter makes o
 
 ### Incremental repository compatibility
 
-An existing incremental repository must have a verified project identity in its
-manifest. For older repositories without that identity, create a full export or
-select a new destination. The application does not infer ownership from matching
-project names. Primary files are checked by SHA-256; auxiliary files are checked
-for existence and nonzero size, without individual content hashes.
+<p align="justify">An existing incremental repository must have a verified project identity in its manifest. For older repositories without that identity, create a full export or select a new destination. The application does not infer ownership from matching project names. Primary files are checked by SHA-256; auxiliary files are checked for existence and nonzero size, without individual content hashes.</p>
 
 ## What gets written to disk
 
@@ -302,7 +256,7 @@ PLC artifacts are exported below:
 PLC/<Device>/<CPU>/<Category>/<GroupPath>/<Name>__<hash>.<format>
 ```
 
-Classic HMI artifacts are exported below:
+<p align="justify">Classic HMI artifacts are exported below:</p>
 
 ```text
 HMI/<Device>/<HMI target>/<Category>/<FolderPath>/<Name>.xml
@@ -310,13 +264,11 @@ HMI/<Device>/<HMI target>/<Category>/<FolderPath>/<Name>.xml
 
 Current categories include `Blocks`, `Types`, `TagTables`, `WatchTables`, `ForceTables`, `UserConstants`, `TechnologyObjects`, `Screens`, `Templates`, `Popups`, `SlideIns`, `Tags`, `Connections`, `TextLists`, `GraphicLists`, `Cycles`, `Scripts`, `GlobalElements`, and `ScreenOverview`.
 
-PLC XML can be normalized for deterministic diffs. HMI screen XML is preserved by default because the Openness WinCC screen XML is the safe reimport format.
+<p align="justify">PLC XML can be normalized for deterministic diffs. HMI screen XML is preserved by default because the Openness WinCC screen XML is the safe reimport format.</p>
 
 ## Requirements and build
 
-Windows, .NET Framework 4.8 and x64. Build with Visual Studio/MSBuild and restore
-StyleCop.Analyzers. The full solution requires the local V21 SDK; only Core and
-OfflineTests can be built without Siemens.
+<p align="justify">Windows, .NET Framework 4.8 and x64. Build with Visual Studio/MSBuild and restore StyleCop.Analyzers. The full solution requires the local V21 SDK; only Core and OfflineTests can be built without Siemens.</p>
 
 ```powershell
 msbuild EidoTiaWorkbench.slnx /restore /p:Configuration=Release /p:Platform=x64
