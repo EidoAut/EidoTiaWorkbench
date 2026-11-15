@@ -79,20 +79,20 @@ push or synchronize files with GitHub.
 ### From a TIA project to useful context
 
 1. **Export the relevant scope.** Include the blocks involved in the task and their
-   supporting types and tag tables. Add HMI objects when operator commands,
-   indications or alarms are relevant. Check the export report for missing,
-   restricted or failed objects.
+ supporting types and tag tables. Add HMI objects when operator commands,
+ indications or alarms are relevant. Check the export report for missing,
+ restricted or failed objects.
 2. **Open or share the exported files.** Use an assistant that can read files or
-   access a local workspace. For a large project, start with the subsystem you are
-   investigating and expand the context as needed.
+ access a local workspace. For a large project, start with the subsystem you are
+ investigating and expand the context as needed.
 3. **Describe the task and expected behavior.** Explain what the machine should
-   do, what it actually does, and which blocks or signals you suspect. Ask the
-   assistant to identify the files and logic supporting its conclusions and to
-   distinguish observations from assumptions.
+ do, what it actually does, and which blocks or signals you suspect. Ask the
+ assistant to identify the files and logic supporting its conclusions and to
+ distinguish observations from assumptions.
 4. **Review the proposed explanation or change.** Use the assistant's output to
-   guide your engineering work. If it produces an importable artifact, validate
-   and preview it before an explicit import. Otherwise, implement the reviewed
-   change in TIA Portal. Compile and test changes in the intended environment.
+ guide your engineering work. If it produces an importable artifact, validate
+ and preview it before an explicit import. Otherwise, implement the reviewed
+ change in TIA Portal. Compile and test changes in the intended environment.
 
 The export keeps the formats provided by the supported Openness operations,
 including structured XML. It does **not** translate every PLC language into SCL
@@ -140,21 +140,21 @@ records Workbench operations, not the machine's runtime alarm history.
 ```text
 Open TIA project
       |
-      v
+ v
 Scan and select artifacts
       |
-      v
+ v
 Export through Openness --> Files + manifest + operation report
                                       |
-                                      v
-                           Your AI assistant + task context
+ v
+ Your AI assistant + task context
                                       |
-                                      v
-                           Review explanation or proposed changes
+ v
+ Review explanation or proposed changes
                                       |
-                                      v
-                           Validate / preview / explicitly import
-                           or implement changes in TIA Portal
+ v
+ Validate / preview / explicitly import
+ or implement changes in TIA Portal
 ```
 
 The scan identifies objects and builds the selectable inventory. Export then
@@ -196,14 +196,14 @@ features work without Openness and keeps engineering calls out of the UI thread.
 ### 1. Connect and scan
 
 1. Open **Settings → TIA Portal Integration** and select a usable V21 installation.
-   Set the workspace folder where you want exports to be written.
+ Set the workspace folder where you want exports to be written.
 2. In **Project**, attach to a running TIA Portal instance or start one from the
-   application, then open/select the project to work with. Attaching uses an
-   existing session; starting an instance lets the application own its lifecycle.
+ application, then open/select the project to work with. Attaching uses an
+ existing session; starting an instance lets the application own its lifecycle.
 3. In **Export**, choose a scan profile and whether to include DBs, then refresh
-   the inventory. Browse the tree and filter by scope, kind, device or text.
+ the inventory. Browse the tree and filter by scope, kind, device or text.
 4. Select the artifacts you want to export. Scanning reads the inventory; it does
-   not export files or import changes into the project.
+ not export files or import changes into the project.
 
 A scan belongs to the project from which it was obtained. If you switch or lose
 that project, scan again before exporting. Runtime discovery alone does not prove
@@ -346,22 +346,22 @@ The [corporate C# guide](docs/EIDO_CSharp_Programming_Style_Guide_v1.0.md) defin
 ## Recent improvements
 
 - **Responsive operation feedback:** a single progress panel shows the phase,
-  item count and current artifact. Navigation and Activity tools remain available
-  during export/import; visual updates are batched to reduce UI work.
+ item count and current artifact. Navigation and Activity tools remain available
+ during export/import; visual updates are batched to reduce UI work.
 - **Project identity checks:** changing or losing the project invalidates the scan.
-  Export verifies the scanned project again before processing artifacts. V21
-  project paths are read from the API's `FileInfo` value.
+ Export verifies the scanned project again before processing artifacts. V21
+ project paths are read from the API's `FileInfo` value.
 - **Incremental integrity:** repositories record their source project path. The
-  primary payload hash is checked against the actual file; local modifications
-  produce a conflict. Missing or empty declared payloads prevent unchanged skips.
+ primary payload hash is checked against the actual file; local modifications
+ produce a conflict. Missing or empty declared payloads prevent unchanged skips.
 - **Explicit validation failures:** corrupt manifests and missing declared files
-  are reported. Import preflight checks the selected target version; an unknown
-  target produces a compatibility warning.
+ are reported. Import preflight checks the selected target version; an unknown
+ target produces a compatibility warning.
 - **Worker recovery and IPC:** request IDs correlate commands, progress, results
-  and cancellation. Observer failures do not desynchronize replies, and an exited
-  worker no longer leaves the UI reporting an open portal.
+ and cancellation. Observer failures do not desynchronize replies, and an exited
+ worker no longer leaves the UI reporting an open portal.
 - **EIDO code style:** updated formatting, XML documentation and programming guide,
-  backed by strict build checks and regression tests.
+ backed by strict build checks and regression tests.
 
 See the [audit and correction record](docs/AUDIT_2026-10-26.md) for evidence,
 remaining limitations and the distinction between offline tests and live TIA
